@@ -1,0 +1,86 @@
+/* src/styles/color-themes.css */
+:root {
+    /* Blue Theme - Default */
+    --navbar-bg-light-blue: 224 242 254;
+    --navbar-bg-dark-blue: 23 37 84;
+    --navbar-text-light-blue: 30 58 138;
+    --navbar-text-dark-blue: 191 219 254;
+    
+    --sidebar-bg-light-blue: 59 130 246;  /* blue-500 */
+    --sidebar-bg-dark-blue: 30 58 138;    /* blue-800 */
+    --sidebar-text-light-blue: 255 255 255; /* أبيض */
+    --sidebar-text-dark-blue: 255 255 255;  /* أبيض */
+    
+    --primary-blue: 59 130 246;
+    --secondary-blue: 99 102 241;
+  
+    /* Green Theme */
+    --navbar-bg-light-green: 220 252 231;
+    --navbar-bg-dark-green: 20 83 45;
+    --navbar-text-light-green: 22 101 52;
+    --navbar-text-dark-green: 187 247 208;
+    
+    --sidebar-bg-light-green: 34 197 94;  /* green-500 */
+    --sidebar-bg-dark-green: 22 101 52;   /* green-800 */
+    --sidebar-text-light-green: 255 255 255;
+    --sidebar-text-dark-green: 255 255 255;
+    
+    --primary-green: 34 197 94;
+    --secondary-green: 22 163 74;
+  
+    /* Purple Theme */
+    --navbar-bg-light-purple: 237 233 254;
+    --navbar-bg-dark-purple: 76 29 149;
+    --navbar-text-light-purple: 107 33 168;
+    --navbar-text-dark-purple: 216 180 254;
+    
+    --sidebar-bg-light-purple: 168 85 247; /* purple-500 */
+    --sidebar-bg-dark-purple: 107 33 168;  /* purple-800 */
+    --sidebar-text-light-purple: 255 255 255;
+    --sidebar-text-dark-purple: 255 255 255;
+    
+    --primary-purple: 168 85 247;
+    --secondary-purple: 147 51 234;
+  
+    /* Orange Theme */
+    --navbar-bg-light-orange: 255 237 213;
+    --navbar-bg-dark-orange: 154 52 18;
+    --navbar-text-light-orange: 154 52 18;
+    --navbar-text-dark-orange: 254 215 170;
+    
+    --sidebar-bg-light-orange: 249 115 22; /* orange-500 */
+    --sidebar-bg-dark-orange: 194 65 12;   /* orange-800 */
+    --sidebar-text-light-orange: 255 255 255;
+    --sidebar-text-dark-orange: 255 255 255;
+    
+    --primary-orange: 249 115 22;
+    --secondary-orange: 234 88 12;
+  
+    /* Pink Theme */
+    --navbar-bg-light-pink: 252 231 243;
+    --navbar-bg-dark-pink: 131 24 67;
+    --navbar-text-light-pink: 157 23 77;
+    --navbar-text-dark-pink: 251 207 232;
+    
+    --sidebar-bg-light-pink: 236 72 153; /* pink-500 */
+    --sidebar-bg-dark-pink: 157 23 77;   /* pink-800 */
+    --sidebar-text-light-pink: 255 255 255;
+    --sidebar-text-dark-pink: 255 255 255;
+    
+    --primary-pink: 236 72 153;
+    --secondary-pink: 219 39 119;
+  
+    /* Default Active Theme (Blue) */
+    --navbar-bg-light: var(--navbar-bg-light-blue);
+    --navbar-bg-dark: var(--navbar-bg-dark-blue);
+    --navbar-text-light: var(--navbar-text-light-blue);
+    --navbar-text-dark: var(--navbar-text-dark-blue);
+    
+    --sidebar-bg-light: var(--sidebar-bg-light-blue);
+    --sidebar-bg-dark: var(--sidebar-bg-dark-blue);
+    --sidebar-text-light: var(--sidebar-text-light-blue);
+    --sidebar-text-dark: var(--sidebar-text-dark-blue);
+    
+    --primary: var(--primary-blue);
+    --secondary: var(--secondary-blue);
+  }

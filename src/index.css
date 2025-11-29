@@ -1,0 +1,333 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary-600: 37 99 235; /* blue-600 */
+  --color-primary-700: 29 78 216; /* blue-700 */
+  --color-primary: 59 130 246; /* blue-500 */
+  --color-secondary: 139 92 246; /* purple-500 */
+  --color-accent: 14 165 233; /* sky-500 */
+  --color-navbar-light: 239 246 255; /* blue-50 - لون فاتح لل navbar */
+  --color-navbar-text: 30 58 138; /* blue-800 - نص غامق لل navbar */
+  --color-background: 255 255 255;
+  --color-text: 17 24 39;
+  --color-border: 229 231 235;
+}
+
+.theme-blue {
+  --color-primary: 59 130 246; /* blue-500 */
+  --color-secondary: 99 102 241; /* indigo-500 */
+  --color-accent: 14 165 233; /* sky-500 */
+  --color-navbar-light: 239 246 255; /* blue-50 */
+  --color-navbar-text: 30 58 138; /* blue-800 */
+}
+
+.theme-green {
+  --color-primary: 16 185 129; /* green-500 */
+  --color-secondary: 5 150 105; /* emerald-500 */
+  --color-accent: 34 197 94; /* green-400 */
+  --color-navbar-light: 240 253 244; /* green-50 */
+  --color-navbar-text: 22 101 52; /* green-800 */
+}
+
+.theme-purple {
+  --color-primary: 139 92 246; /* purple-500 */
+  --color-secondary: 168 85 247; /* purple-500 */
+  --color-accent: 192 132 252; /* purple-300 */
+  --color-navbar-light: 250 245 255; /* purple-50 */
+  --color-navbar-text: 107 33 168; /* purple-800 */
+}
+
+.theme-orange {
+  --color-primary: 249 115 22; /* orange-500 */
+  --color-secondary: 234 88 12; /* orange-600 */
+  --color-accent: 251 146 60; /* orange-400 */
+  --color-navbar-light: 255 247 237; /* orange-50 */
+  --color-navbar-text: 154 52 18; /* orange-800 */
+}
+
+.theme-pink {
+  --color-primary: 236 72 153; /* pink-500 */
+  --color-secondary: 219 39 119; /* pink-600 */
+  --color-accent: 244 114 182; /* pink-400 */
+  --color-navbar-light: 253 242 248; /* pink-50 */
+  --color-navbar-text: 157 23 77; /* pink-800 */
+}
+
+.dark {
+  --color-background: 17 24 39; /* gray-900 */
+  --color-text: 249 250 251; /* gray-50 */
+  --color-border: 55 65 81; /* gray-700 */
+  --color-navbar-light: 30 41 59; /* slate-800 - لون داكن لل navbar */
+  --color-navbar-text: 248 250 252; /* slate-50 - نص فاتح لل navbar */
+}
+
+.dark .theme-blue {
+  --color-primary: 96 165 250; /* blue-400 */
+  --color-secondary: 129 140 248; /* indigo-400 */
+  --color-accent: 56 189 248; /* sky-400 */
+  --color-navbar-light: 30 58 138; /* blue-900 */
+  --color-navbar-text: 191 219 254; /* blue-200 */
+}
+
+.dark .theme-green {
+  --color-primary: 52 211 153; /* green-400 */
+  --color-secondary: 16 185 129; /* emerald-500 */
+  --color-accent: 74 222 128; /* green-400 */
+  --color-navbar-light: 22 101 52; /* green-900 */
+  --color-navbar-text: 187 247 208; /* green-200 */
+}
+
+.dark .theme-purple {
+  --color-primary: 167 139 250; /* purple-300 */
+  --color-secondary: 192 132 252; /* purple-400 */
+  --color-accent: 216 180 254; /* purple-200 */
+  --color-navbar-light: 107 33 168; /* purple-900 */
+  --color-navbar-text: 216 180 254; /* purple-200 */
+}
+
+.dark .theme-orange {
+  --color-primary: 251 146 60; /* orange-400 */
+  --color-secondary: 249 115 22; /* orange-500 */
+  --color-accent: 253 186 116; /* orange-300 */
+  --color-navbar-light: 154 52 18; /* orange-900 */
+  --color-navbar-text: 254 215 170; /* orange-200 */
+}
+
+.dark .theme-pink {
+  --color-primary: 244 114 182; /* pink-400 */
+  --color-secondary: 236 72 153; /* pink-500 */
+  --color-accent: 249 168 212; /* pink-300 */
+  --color-navbar-light: 157 23 77; /* pink-900 */
+  --color-navbar-text: 251 207 232; /* pink-200 */
+}
+
+body {
+  background-color: rgb(var(--color-background));
+  color: rgb(var(--color-text));
+  transition: all 0.3s ease;
+}
+
+@layer base {
+  .bg-primary {
+    background-color: rgb(var(--color-primary));
+  }
+
+  .text-primary {
+    color: rgb(var(--color-primary));
+  }
+
+  .border-primary {
+    border-color: rgb(var(--color-primary));
+  }
+
+  .bg-secondary {
+    background-color: rgb(var(--color-secondary));
+  }
+
+  .text-secondary {
+    color: rgb(var(--color-secondary));
+  }
+
+  .bg-accent {
+    background-color: rgb(var(--color-accent));
+  }
+
+  .text-accent {
+    color: rgb(var(--color-accent));
+  }
+
+  .bg-background {
+    background-color: rgb(var(--color-background));
+  }
+
+  .text-text {
+    color: rgb(var(--color-text));
+  }
+
+  .border-border {
+    border-color: rgb(var(--color-border));
+  }
+
+  /* ألوان Navbar الجديدة */
+  .bg-navbar {
+    background-color: rgb(var(--color-navbar-light));
+  }
+
+  .text-navbar {
+    color: rgb(var(--color-navbar-text));
+  }
+}
+
+@layer components {
+  /* كلاسات مخصصة للبطاقة باستخدام الثيم */
+  .project-card-theme {
+    background-color: rgb(var(--color-background));
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgb(var(--color-border));
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .project-card-selected {
+    border-color: rgb(var(--color-primary));
+    box-shadow: 0 0 0 2px color-mix(in srgb, rgb(var(--color-primary)) 20%, transparent);
+    background-color: color-mix(in srgb, rgb(var(--color-primary)) 5%, transparent);
+  }
+
+  .project-card-hover {
+    border-color: rgb(229, 231, 235);
+  }
+  
+  .dark .project-card-hover {
+    border-color: rgb(55, 65, 81);
+  }
+  
+  .project-card-hover:hover {
+    border-color: rgb(var(--color-primary));
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}
+
+/* بقية الإعدادات للاتجاهات */
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+/* تحسينات للخط العربي في الوضع RTL */
+.rtl body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* في src/index.css */
+.sidebar-integration {
+  position: relative;
+  overflow: visible;
+}
+
+.sidebar-integration::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transition: all 0.3s ease;
+}
+
+.ltr .sidebar-integration::after {
+  left: 100%;
+}
+
+.rtl .sidebar-integration::after {
+  right: 100%;
+  transform: rotate(180deg);
+}
+
+/* تأثير الانتشار */
+.sidebar-spread-effect {
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.sidebar-spread-effect::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 100%
+  );
+  z-index: -1;
+}
+
+.ltr .sidebar-spread-effect::before {
+  left: 100%;
+}
+
+.rtl .sidebar-spread-effect::before {
+  right: 100%;
+  transform: rotate(180deg);
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+/* في ملف CSS الرئيسي */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* تأثيرات الحركة */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+/* تأثيرات السحب */
+.drag-ghost {
+  opacity: 0.6;
+  transform: rotate(5deg);
+}
+
+.drop-zone-active {
+  background: rgba(59, 130, 246, 0.05) !important;
+  border-color: rgb(59, 130, 246) !important;
+}

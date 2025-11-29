@@ -1,0 +1,264 @@
+// src/components/Projects/ProjectFilters.jsx
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Search, Filter, RotateCcw, ChevronDown, ChevronUp, User } from "lucide-react";
+import CustomDropdown from "../../../../components/UI/Dropdown";
+import InputField from "../../../../components/UI/InputField";
+import { userService } from "../../users/services/userService";
+
+export default function ProjectFilters({
+  filters,
+  onFilterChange,
+  onReset,
+  className = "",
+}) {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
+  const [showFilters, setShowFilters] = useState(false);
+  const [managers, setManagers] = useState([]);
+  const [loadingManagers, setLoadingManagers] = useState(false);
+
+  // جلب مديري المشاريع
+  useEffect(() => {
+    const fetchManagers = async () => {
+      setLoadingManagers(true);
+      try {
+        const result = await userService.getUsers({ role: "Admin" });
+        setManagers(result.data || []);
+      } catch (error) {
+        console.error("Error fetching managers:", error);
+      } finally {
+        setLoadingManagers(false);
+      }
+    };
+
+    fetchManagers();
+  }, []);
+
+  const handleChange = (key, value) => {
+    onFilterChange({
+      ...filters,
+      [key]: value,
+    });
+  };
+
+  const hasActiveFilters = Object.values(filters).some(value => 
+    value !== "" && value !== null && value !== undefined
+  );
+
+  // خيارات الحالة المحدثة
+  const statusOptions = [
+    { value: "", label: t("allStatuses") },
+    { value: "planning", label: t("planning") },
+    { value: "Underimplementation", label: t("underImplementation") },
+    { value: "Complete", label: t("complete") },
+    { value: "Pause", label: t("pause") },
+    { value: "Notimplemented", label: t("notImplemented") },
+  ];
+
+  // خيارات مديري المشاريع
+  const managerOptions = [
+    { value: "", label: t("allManagers") },
+    ...managers.map(manager => ({
+      value: manager.id.toString(),
+      label: manager.username
+    }))
+  ];
+
+  // خيارات الترتيب
+  const sortOptions = [
+    { value: "name", label: t("name") },
+    { value: "status", label: t("status") },
+    { value: "start_date", label: t("startDate") },
+    { value: "end_date", label: t("endDate") },
+    { value: "success_rate", label: t("successRate") },
+  ];
+
+  return (
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 ${className}`}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
+      {/* رأس الفلتر */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className={`flex items-center justify-between ${isRTL ? "flex-row-reverse" : ""}`}>
+          {/* الجزء الأيمن - زر إظهار/إخفاء الفلتر */}
+          <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-3 py-1 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ${
+                isRTL ? "flex-row-reverse" : ""
+              }`}
+            >
+              {showFilters ? (
+                <>
+                  <span>{t("hideFilters")}</span>
+                  <ChevronUp size={16} />
+                </>
+              ) : (
+                <>
+                  <span>{t("showFilters")}</span>
+                  <ChevronDown size={16} />
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* الجزء الأيسر - العنوان ومؤشر الفلتر النشط */}
+          <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
+            {hasActiveFilters && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-primary font-medium">{t("active")}</span>
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-primary" />
+              <h3 className="font-medium text-gray-900 dark:text-white text-sm">
+                {t("filters")}
+              </h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* محتوى الفلتر */}
+      {showFilters && (
+        <div className="p-4">
+          {/* الصف الأول من الفلاتر */}
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 ${isRTL ? "text-right" : "text-left"}`}>
+            {/* ترتيب */}
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t("sortBy")}
+              </label>
+              <CustomDropdown
+                options={sortOptions}
+                value={filters.sortBy}
+                onChange={(value) => handleChange("sortBy", value)}
+                placeholder={t("sortBy")}
+                isRTL={isRTL}
+                className="w-full"
+              />
+            </div>
+
+            {/* فلترة بمدير المشروع */}
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t("filterByManager")}
+              </label>
+              <CustomDropdown
+                options={managerOptions}
+                value={filters.project_manager_id}
+                onChange={(value) => handleChange("project_manager_id", value)}
+                placeholder={loadingManagers ? t("loading") : t("allManagers")}
+                isRTL={isRTL}
+                className="w-full"
+                disabled={loadingManagers}
+              />
+            </div>
+
+            {/* فلترة بالحالة */}
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t("filterByStatus")}
+              </label>
+              <CustomDropdown
+                options={statusOptions}
+                value={filters.status}
+                onChange={(value) => handleChange("status", value)}
+                placeholder={t("allStatuses")}
+                isRTL={isRTL}
+                className="w-full"
+              />
+            </div>
+
+            {/* بحث بالاسم */}
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <InputField
+                label={t("searchByName")}
+                value={filters.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+                placeholder={t("enterProjectName")}
+                Icon={Search}
+                error={null}
+                dir={isRTL ? "rtl" : "ltr"}
+                iconPosition="right"
+              />
+            </div>
+          </div>
+
+          {/* الصف الثاني من الفلاتر */}
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 ${isRTL ? "text-right" : "text-left"}`}>
+            {/* تاريخ الانتهاء إلى */}
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <InputField
+                label={t("endDateTo")}
+                value={filters.end_date_to}
+                onChange={(e) => handleChange("end_date_to", e.target.value)}
+                placeholder={t("enterEndDate")}
+                error={null}
+                dir={isRTL ? "rtl" : "ltr"}
+                type="date"
+              />
+            </div>
+
+            {/* تاريخ الانتهاء من */}
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <InputField
+                label={t("endDateFrom")}
+                value={filters.end_date_from}
+                onChange={(e) => handleChange("end_date_from", e.target.value)}
+                placeholder={t("enterStartDate")}
+                error={null}
+                dir={isRTL ? "rtl" : "ltr"}
+                type="date"
+              />
+            </div>
+
+            {/* تاريخ البدء إلى */}
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <InputField
+                label={t("startDateTo")}
+                value={filters.start_date_to}
+                onChange={(e) => handleChange("start_date_to", e.target.value)}
+                placeholder={t("enterEndDate")}
+                error={null}
+                dir={isRTL ? "rtl" : "ltr"}
+                type="date"
+              />
+            </div>
+
+            {/* تاريخ البدء من */}
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <InputField
+                label={t("startDateFrom")}
+                value={filters.start_date_from}
+                onChange={(e) => handleChange("start_date_from", e.target.value)}
+                placeholder={t("enterStartDate")}
+                error={null}
+                dir={isRTL ? "rtl" : "ltr"}
+                type="date"
+              />
+            </div>
+          </div>
+
+          {/* زر الإعادة */}
+          <div className={`flex ${isRTL ? "justify-end" : "justify-start"}`}>
+            {hasActiveFilters && (
+              <button
+                onClick={onReset}
+                className={`flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ${
+                  isRTL ? "flex-row-reverse" : ""
+                }`}
+              >
+                <span>{t("resetFilters")}</span>
+                <RotateCcw size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
