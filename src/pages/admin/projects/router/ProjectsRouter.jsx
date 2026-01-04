@@ -1,52 +1,65 @@
-// src/pages/admin/projects/router/ProjectsRouter.jsx
+import React from "react";
 import { Routes, Route } from "react-router-dom";
-import ProjectsPage from "../pages/project/ProjectsPage";
+
 import ProjectDetailsPage from "../pages/project/ProjectDetailsPage";
-import ProjectCreatePage from "../pages/project/ProjectCreatePage";
 import ProjectEditPage from "../pages/project/ProjectEditPage";
-import TaskCreatePage from "../pages/tasks/TaskCreatePage";
-import AddUsersToProjectPage from "../pages/users/AddUsersToProjectPage";
+import ProjectTasksPage from "../pages/tasks/ProjectTasksPage";
+import ProjectTaskCreatePage from "../pages/tasks/ProjectTaskCreatePage";
+import ProjectTaskEditPage from "../pages/tasks/ProjectTaskEditPage";
+import ProjectTaskDetailsPage from "../pages/tasks/ProjectTaskDetailsPage";
+import ProjectUsersPage from "../pages/users/ProjectUsersPage";
+import ProjectsPage from "../pages/project/ProjectsPage";
 import TaskAssignmentPage from "../pages/tasks/TaskAssignmentPage";
-import ProjectUsersManagementPage from "../pages/users/ProjectUsersManagementPage";
-import TaskManagementPage from "../pages/tasks/TaskManagementPage";
-import TaskEditPage from "../pages/tasks/TaskEditPage";
-import TaskDetailsPage from "../pages/tasks/TaskDetailsPage"; // إضافة هذه الصفحة
+
+import SupTaskDetailsPage from "../pages/SupTask/SupTaskDetailsPage";
+import SupTaskCreatePage from "../pages/SupTask/SupTaskCreatePage";
+import SupTaskEditPage from "../pages/SupTask/SupTaskEditPage";
+import SupTasksListPage from "../pages/SupTask/SupTasksListPage";
+import ProjectCreatePage from "../pages/project/ProjectCreatePage";
 
 export default function ProjectsRouter() {
   return (
     <Routes>
-      {/* الصفحة الرئيسية للمشاريع */}
-      <Route index element={<ProjectsPage />} />
-
-      {/* إنشاء مشروع جديد */}
-      <Route path="create" element={<ProjectCreatePage />} />
-
-      {/* مسارات المشروع الفردي */}
+      {/* مسارات المشروع */}
       <Route path=":projectId">
-        {/* تفاصيل المشروع */}
         <Route index element={<ProjectDetailsPage />} />
-
-        {/* تحرير المشروع */}
+        <Route path="create" element={<ProjectCreatePage />} />
         <Route path="edit" element={<ProjectEditPage />} />
-
-        {/* إدارة المهام */}
+        
+        {/* المهام */}
         <Route path="tasks">
-          <Route index element={<TaskManagementPage />} />
-          <Route path="create" element={<TaskCreatePage />} />
+          <Route index element={<ProjectTasksPage />} />
+          <Route path="create" element={<ProjectTaskCreatePage />} />
           <Route path=":taskId">
-            <Route index element={<TaskDetailsPage />} />{" "}
-            {/* إضافة هذه السطر */}
-            <Route path="edit" element={<TaskEditPage />} />
+            <Route index element={<ProjectTaskDetailsPage />} />
+            <Route path="edit" element={<ProjectTaskEditPage />} />
             <Route path="assign-users" element={<TaskAssignmentPage />} />
+            
+            {/* المهام الفرعية */}
+            <Route path="subtasks">
+              <Route index element={<SupTasksListPage />} />
+              <Route path="create" element={<SupTaskCreatePage />} />
+              <Route path=":supTaskId">
+                <Route index element={<SupTaskDetailsPage />} />
+                <Route path="edit" element={<SupTaskEditPage />} />
+              </Route>
+            </Route>
           </Route>
         </Route>
-
-        {/* إدارة المستخدمين */}
-        <Route path="users">
-          <Route index element={<ProjectUsersManagementPage />} />
-          <Route path="add" element={<AddUsersToProjectPage />} />
-        </Route>
+        
+        {/* المستخدمين */}
+        <Route path="users" element={<ProjectUsersPage />} />
+        
+        {/* صفحات أخرى */}
+        <Route path="export" element={<div>Export Page</div>} />
+        <Route path="activity" element={<div>Activity Log</div>} />
+        <Route path="notifications" element={<div>Notifications</div>} />
+        <Route path="messages" element={<div>Messages</div>} />
       </Route>
+      
+      {/* صفحات أخرى */}
+      <Route path="create" element={<ProjectCreatePage />} />
+      <Route index element={<ProjectsPage />} />
     </Routes>
   );
 }

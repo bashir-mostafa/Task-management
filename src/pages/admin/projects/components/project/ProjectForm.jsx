@@ -1,11 +1,11 @@
 // src/components/Projects/ProjectForm/ProjectForm.jsx
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import InputField from "../../../../components/UI/InputField";
-import Dropdown from "../../../../components/UI/Dropdown";
-import TextAreaField from "../../../../components/UI/TextAreaField";
-import FormActions from "../../../../components/UI/FormActions";
-import { userService } from "../../users/services/userService";
+import InputField from "../../../../../components/UI/InputField";
+import Dropdown from "../../../../../components/UI/Dropdown";
+import TextAreaField from "../../../../../components/UI/TextAreaField";
+import FormActions from "../../../../../components/UI/FormActions";
+import { userService } from "../../../users/services/userService";
 
 export default function ProjectForm({
   project,
@@ -23,7 +23,7 @@ export default function ProjectForm({
     status: "planning",
     start_date: "",
     end_date: "",
-    notes: ""
+    notes: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -56,9 +56,9 @@ export default function ProjectForm({
         description: project.description || "",
         project_Manager_id: project.project_manager?.id?.toString() || "",
         status: project.status || "planning",
-        start_date: project.start_date ? project.start_date.split('T')[0] : "",
-        end_date: project.end_date ? project.end_date.split('T')[0] : "",
-        notes: project.notes || ""
+        start_date: project.start_date ? project.start_date.split("T")[0] : "",
+        end_date: project.end_date ? project.end_date.split("T")[0] : "",
+        notes: project.notes || "",
       });
     }
   }, [project]);
@@ -94,7 +94,7 @@ export default function ProjectForm({
     if (formData.start_date && formData.end_date) {
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
-      
+
       if (endDate < startDate) {
         newErrors.end_date = t("endDateAfterStartDate");
       }
@@ -110,9 +110,9 @@ export default function ProjectForm({
       // تحويل project_Manager_id إلى number
       const submitData = {
         ...formData,
-        project_Manager_id: parseInt(formData.project_Manager_id)
+        project_Manager_id: parseInt(formData.project_Manager_id),
       };
-      
+
       onSubmit(submitData);
     }
   };
@@ -135,17 +135,16 @@ export default function ProjectForm({
   const statusOptions = isEditing ? statusOptionsOnEdit : statusOptionsOnCreate;
 
   // خيارات مديري المشاريع
-  const managerOptions = managers.map(manager => ({
+  const managerOptions = managers.map((manager) => ({
     value: manager.id.toString(),
-    label: manager.username
+    label: manager.username,
   }));
 
   return (
     <form
       onSubmit={handleSubmit}
       className="space-y-4 p-6 max-w-md mx-auto"
-      dir={isRTL ? "rtl" : "ltr"}
-    >
+      dir={isRTL ? "rtl" : "ltr"}>
       {/* معلومات المشروع للعرض فقط في وضع التعديل */}
       {isEditing && project && (
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -154,12 +153,20 @@ export default function ProjectForm({
           </h3>
           <div className="space-y-2 text-sm">
             <div>
-              <span className="font-medium text-blue-700 dark:text-blue-400">{t("createdBy")}: </span>
-              <span className="text-blue-900 dark:text-blue-200">{project.project_manager?.username}</span>
+              <span className="font-medium text-blue-700 dark:text-blue-400">
+                {t("createdBy")}:{" "}
+              </span>
+              <span className="text-blue-900 dark:text-blue-200">
+                {project.project_manager?.username}
+              </span>
             </div>
             <div>
-              <span className="font-medium text-blue-700 dark:text-blue-400">{t("successRate")}: </span>
-              <span className="text-blue-900 dark:text-blue-200">{project.success_rate}%</span>
+              <span className="font-medium text-blue-700 dark:text-blue-400">
+                {t("successRate")}:{" "}
+              </span>
+              <span className="text-blue-900 dark:text-blue-200">
+                {project.success_rate}%
+              </span>
             </div>
           </div>
         </div>
@@ -197,13 +204,17 @@ export default function ProjectForm({
             options={managerOptions}
             value={formData.project_Manager_id}
             onChange={(value) => setField("project_Manager_id", value)}
-            placeholder={loadingManagers ? t("loadingManagers") : t("selectManager")}
+            placeholder={
+              loadingManagers ? t("loadingManagers") : t("selectManager")
+            }
             isRTL={isRTL}
             className="w-full"
             disabled={loadingManagers}
           />
           {errors.project_Manager_id && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.project_Manager_id}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              {errors.project_Manager_id}
+            </p>
           )}
         </div>
 

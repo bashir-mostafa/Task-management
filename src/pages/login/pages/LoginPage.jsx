@@ -5,8 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../contexts/AuthContext";
 import SettingsPanel from "../components/SettingsPanel";
 import LoginForm from "../components/LoginForm";
-import IllustrativePanel from "../components/IllustrativePanel";
-import { loginUser } from "../services/authService"; // Adjust the path if needed
+import { loginUser } from "../services/authService"; 
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -75,22 +74,21 @@ export default function LoginPage() {
 
   const isRTL = i18n.language === "ar";
 
-  return (
-    <div
-      className={`min-h-screen flex bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20 relative overflow-hidden ${
-        isRTL ? "rtl" : "ltr"
-      }`}>
+ return (
+    <div className={`min-h-screen w-full flex flex-col md:flex-row bg-gradient-to-br from-primary/15 via-secondary/5 to-accent/10 relative overflow-hidden ${
+      isRTL ? "rtl" : "ltr"
+    }`}>
+      {/* لوحة الإعدادات */}
       <SettingsPanel position={isRTL ? "top-left" : "top-right"} />
-
-      {/* Illustrative Panel */}
-      <IllustrativePanel isRTL={isRTL} />
-
-      {/* Login Form */}
-      <div className="flex-1 flex items-center justify-center p-4 z-10">
-        <div
-          className={`w-full max-w-md sm:max-w-lg p-8 sm:p-12 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 ${
-            shake ? "animate-shake" : "hover:shadow-3xl"
-          }`}>
+      
+     
+      
+      {/* نموذج تسجيل الدخول */}
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8 z-10">
+        <div className={`w-full max-w-md p-6 sm:p-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl dark:shadow-2xl border border-gray-100 dark:border-gray-800 transition-all duration-300 ${
+          shake ? "animate-shake" : "hover:shadow-2xl dark:hover:shadow-3xl"
+        }`}>
+          
           <LoginForm
             username={username}
             setUsername={setUsername}

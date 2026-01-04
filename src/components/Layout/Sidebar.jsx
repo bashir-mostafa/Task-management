@@ -21,7 +21,7 @@ export default function Sidebar({ isOpen, toggleSidebar, isRTL }) {
   const { state } = useAuth();
 
   const role = state.role;
-  
+
   const sidebarPosition = isRTL ? "right-0" : "left-0";
 
   // 🧭 الروابط لكل دور - مصغرة
@@ -42,28 +42,15 @@ export default function Sidebar({ isOpen, toggleSidebar, isRTL }) {
         icon: <LayoutDashboard size={20} />,
       },
       {
-        to: "/dashboard/projects",
+        to: "/projects",
         label: t("projects"),
         icon: <Folder size={20} />,
       },
+
+      { to: "/users", label: t("users"), icon: <Users size={20} /> },
+
       {
-        to: "/dashboard/tasks",
-        label: t("tasks"),
-        icon: <ListTodo size={20} />,
-      },
-      { to: "/dashboard/users", label: t("users"), icon: <Users size={20} /> },
-      {
-        to: "/dashboard/reports",
-        label: t("reports"),
-        icon: <BarChart2 size={20} />,
-      },
-      {
-        to: "/dashboard/notifications",
-        label: t("notifications"),
-        icon: <Bell size={20} />,
-      },
-      {
-        to: "/dashboard/settings",
+        to: "/settings",
         label: t("settings"),
         icon: <Settings size={20} />,
       },
@@ -74,37 +61,12 @@ export default function Sidebar({ isOpen, toggleSidebar, isRTL }) {
 
   return (
     <aside
-      className={`h-screen bg-primary text-white flex flex-col fixed ${sidebarPosition} top-0 z-50 shadow-lg overflow-hidden transition-all duration-200 ${
+      className={`h-[91vh] bg-primary text-white flex  flex-col fixed ${sidebarPosition} top-16 z-40 shadow-lg overflow-hidden transition-all duration-200 ${
         isOpen ? "w-52" : "w-16"
       }`}>
-      {/* العنوان المصغر */}
-      <div className="flex-shrink-0 p-3">
-        <div
-          className={`flex items-center ${
-            isOpen ? "justify-start gap-3" : "justify-center"
-          } ${isRTL ? "flex-row-reverse" : ""}`}>
-          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-lg font-bold">{state.user?.username ? state.user.username[0].toUpperCase() : "?"}</span>
-          </div>
-          <div
-            className={`transition-opacity duration-200 ${
-              isOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
-            }`}>
-            <h2 className="font-bold text-white text-xl whitespace-nowrap">
-              {t("appName")}
-            </h2>
-          </div>
-        </div>
-        <div
-          className={`text-white/70 text-xs mt-2 text-center transition-opacity duration-200 ${
-            isOpen ? "opacity-100" : "opacity-0 h-0 overflow-hidden"
-          }`}>
-          {state.user?.name ? `${state.user.name}` : t("welcome")}
-        </div>
-      </div>
-
+    
       {/* روابط التنقل */}
-      <nav className="flex-1 px-2">
+      <nav className="flex-1 px-2 mt-5">
         <ul className="space-y-1">
           {items.map((item) => (
             <li key={item.to}>

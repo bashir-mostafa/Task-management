@@ -14,7 +14,7 @@ import {
   PauseCircle,
   XCircle,
 } from "lucide-react";
-import DeleteConfirmationModal from "../../../../components/UI/DeleteConfirmationModal";
+import DeleteConfirmationModal from "../../../../../components/UI/DeleteConfirmationModal";
 
 const ProjectCard = ({
   project,
@@ -24,7 +24,7 @@ const ProjectCard = ({
   onEdit,
   onDelete,
   onBulkDelete,
-  isBulkMode = false
+  isBulkMode = false,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -69,7 +69,7 @@ const ProjectCard = ({
   // دالة للانتقال إلى صفحة المشروع
   const handleProjectClick = () => {
     if (!isBulkMode) {
-      navigate(`/dashboard/projects/${project.id}`);
+      navigate(`/projects/${project.id}`);
     }
   };
 
@@ -103,7 +103,7 @@ const ProjectCard = ({
         <div
           className={`project-card-theme group ${
             isSelected ? "project-card-selected" : "project-card-hover"
-          } ${isBulkMode ? 'cursor-default' : 'cursor-pointer'}`}
+          } ${isBulkMode ? "cursor-default" : "cursor-pointer"}`}
           onClick={handleProjectClick}>
           <div className="p-6">
             <div className="flex items-center justify-between">
@@ -125,7 +125,7 @@ const ProjectCard = ({
                       <button
                         onClick={handleProjectClick}
                         className={`text-lg font-semibold text-gray-800 dark:text-white transition-colors text-left truncate ${
-                          isBulkMode ? 'cursor-default' : 'hover:text-primary'
+                          isBulkMode ? "cursor-default" : "hover:text-primary"
                         }`}>
                         {project.name}
                       </button>
@@ -230,14 +230,13 @@ const ProjectCard = ({
       <div
         className={`project-card-theme group ${
           isSelected ? "project-card-selected" : "project-card-hover"
-        } ${isBulkMode ? 'cursor-default' : 'cursor-pointer'}`}
+        } ${isBulkMode ? "cursor-default" : "cursor-pointer"}`}
         onClick={handleProjectClick}>
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-3">
-                
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <FolderOpen
                     size={20}
@@ -246,7 +245,7 @@ const ProjectCard = ({
                   <button
                     onClick={handleProjectClick}
                     className={`text-lg font-semibold text-gray-800 dark:text-white transition-colors text-left truncate ${
-                      isBulkMode ? 'cursor-default' : 'hover:text-primary'
+                      isBulkMode ? "cursor-default" : "hover:text-primary"
                     }`}>
                     {project.name}
                   </button>
@@ -314,6 +313,16 @@ const ProjectCard = ({
               </span>
             </div>
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+              <Calendar
+                size={16}
+                className="text-gray-400 dark:text-gray-500 flex-shrink-0"
+              />
+              <span className="truncate">
+                {t("ends")}:{" "}
+                {new Date(project.end_date).toLocaleDateString()}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
               <User
                 size={16}
                 className="text-gray-400 dark:text-gray-500 flex-shrink-0"
@@ -322,15 +331,7 @@ const ProjectCard = ({
                 {project.project_manager?.username || "N/A"}
               </span>
             </div>
-            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-              <Target
-                size={16}
-                className="text-gray-400 dark:text-gray-500 flex-shrink-0"
-              />
-              <span className="truncate">
-                {t("successRate")}: {project.success_rate}%
-              </span>
-            </div>
+            
           </div>
         </div>
       </div>

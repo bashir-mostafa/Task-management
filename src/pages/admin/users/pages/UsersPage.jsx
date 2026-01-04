@@ -65,6 +65,7 @@ export default function UsersPage() {
         ...filters,
         PageNumber: pagination.pageNumber,
         PageSize: pagination.pageSize,
+        IsDeleted: false
       };
 
       const result = await userService.getUsers(params);

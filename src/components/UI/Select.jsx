@@ -6,15 +6,24 @@ const Select = ({
   label,
   value,
   onChange,
+  options = [], // إضافة خاصية options
   error,
   required = false,
   disabled = false,
   children,
   className = "",
   icon,
+  placeholder,
+  loading = false,
   ...props
 }) => {
   const { isDark } = useDarkMode();
+
+  const handleChange = (e) => {
+    if (onChange) {
+      onChange(e.target.value);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -33,9 +42,9 @@ const Select = ({
         )}
         
         <select
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
+          value={value || ""}
+          onChange={handleChange}
+          disabled={disabled || loading}
           className={`
             w-full px-4 py-2.5 rounded-lg border transition-colors appearance-none
             ${icon ? 'pl-10' : 'pl-4'}
@@ -49,14 +58,38 @@ const Select = ({
             disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed
             ${className}
           `.trim()}
-          {...props}>
+          {...props}
+        >
+          {/* إضافة placeholder إذا كان متاحًا */}
+          {placeholder && (
+            <option value="" disabled>
+              {loading ? "جاري التحميل..." : placeholder}
+            </option>
+          )}
+          
+          {/* عرض الخيارات من خاصية options */}
+          {options.map((option) => (
+            <option 
+              key={option.value} 
+              value={option.value}
+              disabled={option.disabled}
+            >
+              {option.label}
+            </option>
+          ))}
+          
+          {/* السماح باستخدام children إذا تم تمريرها */}
           {children}
         </select>
         
         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          {loading ? (
+            <div className="h-5 w-5 border-2 border-gray-300 dark:border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          )}
         </div>
       </div>
       

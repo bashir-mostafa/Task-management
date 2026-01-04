@@ -16,10 +16,8 @@ export default function DirectionHandler() {
       document.documentElement.classList.toggle('ltr', dir === 'ltr');
     };
 
-    // تحديث فوري
     updateDirection(); 
 
-    // الاستماع لتغييرات اللغة
     i18n.on('languageChanged', updateDirection);
 
     return () => {

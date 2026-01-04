@@ -20,7 +20,7 @@ export default function TextAreaField({
   const { t } = useTranslation();
 
   return (
-    <div className={`w-full ${className}`} dir={dir}>
+    <div className={`w-full ${className}`} >
       {label && (
         <label className="block text-sm font-medium text-text mb-2">
           {label}
@@ -31,9 +31,7 @@ export default function TextAreaField({
       <div className="relative">
         {icon && (
           <div
-            className={`absolute inset-y-0 ${
-              dir === "rtl" ? "right-3" : "left-3"
-            } flex items-center pointer-events-none text-text/60`}>
+            className={`absolute inset-y-0  flex items-center pointer-events-none text-text/60`}>
             {icon}
           </div>
         )}
@@ -48,7 +46,7 @@ export default function TextAreaField({
             w-full px-3 py-2 border-2 rounded-xl transition-all duration-200
             focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
             resize-none backdrop-blur-sm
-            ${icon ? (dir === "rtl" ? "pr-10" : "pl-10") : ""}
+          
             ${
               error
                 ? "border-red-500 bg-red-50/50 dark:bg-red-900/20 text-red-900 dark:text-red-200 placeholder-red-400"
@@ -59,7 +57,7 @@ export default function TextAreaField({
                 ? "bg-text/5 text-text/40 cursor-not-allowed"
                 : "hover:border-text/30 dark:hover:border-text/20"
             }
-            ${dir === "rtl" ? "text-right" : "text-left"}
+            
           `}
           {...props}
         />

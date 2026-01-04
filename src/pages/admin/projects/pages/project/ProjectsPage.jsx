@@ -1,10 +1,9 @@
-// src/pages/admin/projects/pages/ProjectsPage.jsx
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import ProjectCard from "../../components/ProjectCard";
-import ProjectFilters from "../../components/ProjectFilters";
-import ProjectModal from "../../components/ProjectModal";
+import ProjectCard from "../../components/project/ProjectCard";
+import ProjectFilters from "../../components/project/ProjectFilters";
+import ProjectModal from "../../components/project/ProjectModal";
 import DeleteConfirmationModal from "../../../../../components/UI/DeleteConfirmationModal";
 import Toast from "../../../../../components/Toast";
 import CustomDropdown from "../../../../../components/UI/Dropdown";
@@ -23,16 +22,11 @@ export default function ProjectsPage() {
 
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
+  // الفلاتر المبسطة
   const [filters, setFilters] = useState({
     name: "",
     status: "",
-    project_manager_id: "",
-    start_date_from: "",
-    start_date_to: "",
-    end_date_from: "",
-    end_date_to: "",
-    success_rate: "",
-    sortBy: "name",
+    Project_Manager_id: "",
   });
 
   const [pagination, setPagination] = useState({
@@ -72,42 +66,55 @@ export default function ProjectsPage() {
     setLoading(true);
     setError("");
     try {
-      const params = {
+      console.log("Fetching projects with filters:", filters);
+
+      const result = await projectService.getProjects({
         ...filters,
         PageNumber: pagination.pageNumber,
         PageSize: pagination.pageSize,
-      };
-
-      const result = await projectService.getProjects(params);
-      setProjects(result.data);
-      setPagination((prev) => ({ ...prev, totalCount: result.totalCount }));
+      });
+      
+      console.log("Projects fetched:", result);
+      
+      if (result && result.data) {
+        setProjects(result.data);
+        setPagination(prev => ({ 
+          ...prev, 
+          totalCount: result.totalCount || 0 
+        }));
+      } else {
+        setProjects([]);
+        setPagination(prev => ({ ...prev, totalCount: 0 }));
+      }
     } catch (error) {
+      console.error("Error fetching projects:", error);
       showToast(t("fetchError"), "error");
+      setProjects([]);
+      setPagination(prev => ({ ...prev, totalCount: 0 }));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProjects();
+    const debounceTimer = setTimeout(() => {
+      fetchProjects();
+    }, 300); // Debounce for 300ms
+
+    return () => clearTimeout(debounceTimer);
   }, [filters, pagination.pageNumber, pagination.pageSize]);
 
   const handleResetFilters = () => {
     setFilters({
       name: "",
       status: "",
-      project_manager_id: "",
-      start_date_from: "",
-      start_date_to: "",
-      end_date_from: "",
-      end_date_to: "",
-      success_rate: "",
-      sortBy: "name",
+      Project_Manager_id: "",
     });
     setPagination((prev) => ({ ...prev, pageNumber: 1 }));
   };
 
   const handleFilterChange = (newFilters) => {
+    console.log("Filter changed:", newFilters);
     setFilters(newFilters);
     setPagination((prev) => ({ ...prev, pageNumber: 1 }));
   };
@@ -115,7 +122,7 @@ export default function ProjectsPage() {
   const handlePageSizeChange = (size) => {
     setPagination((prev) => ({
       ...prev,
-      pageSize: size,
+      pageSize: parseInt(size),
       pageNumber: 1,
     }));
   };
@@ -138,6 +145,7 @@ export default function ProjectsPage() {
       );
       showToast(t("projectDeletedSuccessfully"), "success");
     } catch (error) {
+      console.error("Delete error:", error);
       showToast(t("deleteError"), "error");
     }
   };
@@ -151,12 +159,13 @@ export default function ProjectsPage() {
       setBulkDeleteModalOpen(false);
       showToast(t("projectsDeletedSuccessfully"), "success");
     } catch (error) {
+      console.error("Bulk delete error:", error);
       showToast(t("deleteError"), "error");
     }
   };
 
   const handleEdit = (project) => {
-    navigate(`/dashboard/projects/${project.id}/edit`);
+    navigate(`/projects/${project.id}/edit`);
   };
 
   const handleModalClose = () => {
@@ -177,6 +186,7 @@ export default function ProjectsPage() {
       handleModalClose();
       await fetchProjects();
     } catch (error) {
+      console.error("Save error:", error);
       showToast(t("saveError"), "error");
     }
   };
@@ -189,19 +199,14 @@ export default function ProjectsPage() {
     );
   };
 
-  const selectAllProjects = () => {
-    if (selectedProjects.length === projects.length) {
-      setSelectedProjects([]);
-    } else {
-      setSelectedProjects(projects.map((project) => project.id));
-    }
-  };
+  
 
   // خيارات حجم الصفحة
   const pageSizeOptions = [
     { value: 12, label: "12" },
     { value: 24, label: "24" },
     { value: 36, label: "36" },
+    { value: 50, label: "50" },
   ];
 
   // SVG Icons
@@ -257,12 +262,12 @@ export default function ProjectsPage() {
     <div className="min-h-screen p-6 bg-background text-text transition-colors duration-300">
       {/* HEADER */}
       <div
-        className={`flex justify-between items-center mb-6 ${
+        className={`flex justify-between items-center mb-8 ${
           isRTL ? "flex-row-reverse" : ""
         }`}
       >
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r mb-2 h-16 from-primary to-secondary bg-clip-text text-transparent">
             {t("projectsManagement")}
           </h1>
           {currentUser && (
@@ -297,21 +302,10 @@ export default function ProjectsPage() {
             </button>
           </div>
 
-          {selectedProjects.length > 0 && (
-            <Button
-              onClick={() => setBulkDeleteModalOpen(true)}
-              className="!w-auto bg-gradient-to-r from-red-600 to-red-700"
-            >
-              <span>{t("deleteSelected")}</span>
-              <span className="bg-red-700 px-2 py-1 rounded-full text-xs ml-2">
-                {selectedProjects.length}
-              </span>
-            </Button>
-          )}
 
           <Button
-            onClick={() => navigate("/dashboard/projects/create")}
-            className="w-[100%] flex items-center gap-0 p-4"
+            onClick={() => navigate("/projects/create")}
+            className="w-[100%] h-10 flex items-center gap-0 p-4 bg"
           >
             <PlusIcon />
             <span> {t("addProject")}</span>
@@ -319,13 +313,12 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters المبسطة */}
       <ProjectFilters
         filters={filters}
         onFilterChange={handleFilterChange}
         onReset={handleResetFilters}
         className="mb-6"
-        isRTL={isRTL}
       />
 
       {/* Controls */}
@@ -339,7 +332,7 @@ export default function ProjectsPage() {
             isRTL ? "flex-row-reverse" : ""
           }`}
         >
-          
+        
 
           {/* Page Size */}
           <div
@@ -379,8 +372,8 @@ export default function ProjectsPage() {
       {/* Projects Grid/List */}
       {loading ? (
         <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
       ) : (
         <div
           className={`
@@ -399,7 +392,10 @@ export default function ProjectsPage() {
               isSelected={selectedProjects.includes(project.id)}
               onSelect={toggleProjectSelection}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onDelete={(id) => {
+                setEditingProject(project);
+                setDeleteModalOpen(true);
+              }}
               isBulkMode={selectedProjects.length > 0}
             />
           ))}
@@ -419,7 +415,7 @@ export default function ProjectsPage() {
             {t("noProjectsDescription")}
           </p>
           <Button
-            onClick={() => navigate("/dashboard/projects/create")}
+            onClick={() => navigate("/projects/create")}
             className="!w-auto"
           >
             + {t("createFirstProject")}
@@ -445,6 +441,20 @@ export default function ProjectsPage() {
         onClose={handleModalClose}
         onSave={handleSaveProject}
         project={editingProject}
+      />
+
+      {/* Modal حذف فردي */}
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={() => {
+          if (editingProject) {
+            handleDelete(editingProject.id);
+            setDeleteModalOpen(false);
+          }
+        }}
+        count={1}
+        type="project"
       />
 
       {/* Modal حذف متعدد */}

@@ -4,31 +4,33 @@ import api from "../../../../services/api";
 export const userTaskService = {
   // تعيين مستخدمين للمهمة
   assignUsersToTask: async (taskId, usersIds) => {
-    const response = await api.post("/UserTask/AssignUsers", {
+    const response = await api.post("/UserTask/AssignUsersToTask", {
       task_id: taskId,
       users_id: usersIds
     });
     return response.data;
   },
 
-  // تحديث مستخدمي المهمة
-  updateTaskUsers: async (taskId, usersIds) => {
-    const response = await api.put("/UserTask/UpdateTaskUsers", {
-      task_id: taskId,
-      users_id: usersIds
+  // حذف مستخدمين من المهمة
+  deleteUsersFromTask: async (taskId, usersIds) => {
+    const response = await api.delete("/UserTask/DeleteUsersInTask", {
+      data: {
+        task_id: taskId,
+        users_id: usersIds
+      }
     });
     return response.data;
   },
 
   // الحصول على تفاصيل المهمة مع المستخدمين
-  getTaskDetails: async (taskId) => {
-    const response = await api.get(`/UserTask/${taskId}`);
-    return response.data;
-  },
-
-  // إزالة مستخدم من المهمة
-  removeUserFromTask: async (taskId, userId) => {
-    const response = await api.delete(`/UserTask/${taskId}/user/${userId}`);
+  getTaskDetails: async (taskId, params = {}) => {
+    const response = await api.get(`/UserTask/${taskId}`, {
+      params: {
+        PageNumber: params.PageNumber || 1,
+        PageSize: params.PageSize || 20,
+        ...params
+      }
+    });
     return response.data;
   }
 };

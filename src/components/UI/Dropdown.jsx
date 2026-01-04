@@ -44,7 +44,7 @@ export default function CustomDropdown({
     <div 
       className={`relative ${className}`} 
       ref={dropdownRef}
-      dir={isRTL ? "rtl" : "ltr"}
+      
     >
       {/* الزر الرئيسي */}
       <button
@@ -61,7 +61,7 @@ export default function CustomDropdown({
           size={iconSizes[size]} 
           className={`text-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
-          } ${isRTL ? "mr-2" : "ml-2"}`}
+          }`}
         />
       </button>
 

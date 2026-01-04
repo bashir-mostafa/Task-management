@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Plus, Circle, AlertCircle, CheckCircle2 } from "lucide-react";
 import TaskColumn from "./TaskColumn";
 import TaskCard from "./TaskCard";
-import TaskModal from "./TaskModal";
-import Button from "../../../../components/UI/Button"; // Fixed import path
+import TaskModal from "../TaskModal";
+import Button from "../../../../../components/UI/Button"; // Fixed import path
 
 const TaskBoard = ({ 
   tasks, 

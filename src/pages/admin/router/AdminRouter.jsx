@@ -9,7 +9,7 @@ import ProjectsRouter from "../projects/router/ProjectsRouter";
 export default function AdminRouter() {
   return (
     <Routes>
-      <Route index element={<DashboardPage />} />
+      <Route index path="dashboard" element={<DashboardPage />} />
       <Route path="projects/*" element={<ProjectsRouter />} />
       <Route path="tasks" element={<TasksPage />} />
       <Route path="users" element={<UsersPage />} />

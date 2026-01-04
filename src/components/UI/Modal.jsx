@@ -1,8 +1,8 @@
 // src/components/UI/Modal.jsx
-import React from "react";
-import { useTranslation } from "react-i18next";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { X } from "lucide-react";
 import useDarkMode from "../../hooks/useDarkMode";
+import { useTranslation } from "react-i18next";
 
 const Modal = ({
   isOpen,
@@ -10,81 +10,140 @@ const Modal = ({
   title,
   children,
   size = "md",
-  closeOnOverlayClick = true,
   showCloseButton = true,
+  closeOnOverlayClick = true,
   className = "",
 }) => {
-  const { t } = useTranslation();
   const { isDark } = useDarkMode();
+  const { t, i18n } = useTranslation();
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const modalRef = useRef(null);
+  const isRTL = i18n.language === "ar";
 
-  if (!isOpen) return null;
-
-  const sizeClasses = {
-    sm: "max-w-md",
-    md: "max-w-lg",
-    lg: "max-w-2xl",
-    xl: "max-w-4xl",
-    full: "max-w-full mx-4",
-  };
-
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget && closeOnOverlayClick) {
-      onClose();
+  // حجم المودال
+  const sizeClasses = useMemo(() => {
+    switch (size) {
+      case "sm":
+        return "max-w-md";
+      case "md":
+        return "max-w-lg";
+      case "lg":
+        return "max-w-2xl";
+      case "xl":
+        return "max-w-4xl";
+      case "full":
+        return "max-w-full mx-4";
+      default:
+        return "max-w-lg";
     }
-  };
+  }, [size]);
 
-  const handleEscapeKey = (e) => {
-    if (e.key === "Escape") {
-      onClose();
+  // التحكم في ظهور واختفاء المودال مع تأثيرات
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      setIsAnimating(true);
+      document.body.style.overflow = "hidden";
+    } else {
+      setIsAnimating(false);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        document.body.style.overflow = "unset";
+      }, 300);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [isOpen]);
 
-  React.useEffect(() => {
-    document.addEventListener("keydown", handleEscapeKey);
-    document.body.style.overflow = "hidden";
+  // إغلاق المودال عند الضغط على ESC
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    },
+    [onClose]
+  );
 
-    return () => {
-      document.removeEventListener("keydown", handleEscapeKey);
-      document.body.style.overflow = "unset";
-    };
-  }, []);
+  useEffect(() => {
+    if (isVisible) {
+      document.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [isVisible, handleKeyDown]);
+
+  // النقر خارج المودال لإغلاقه
+  const handleOverlayClick = useCallback(
+    (event) => {
+      if (
+        closeOnOverlayClick &&
+        modalRef.current &&
+        !modalRef.current.contains(event.target)
+      ) {
+        onClose();
+      }
+    },
+    [closeOnOverlayClick, onClose]
+  );
+
+  // إذا لم يكن المودال مفتوحاً، لا نعيد شيء
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
+        isAnimating
+          ? "opacity-100 visible"
+          : "opacity-0 invisible"
+      }`}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? "modal-title" : undefined}>
+      aria-labelledby="modal-title"
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+
+      {/* Modal Content */}
       <div
-        className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full ${sizeClasses[size]} transform animate-scale-in ${className}`}>
-        
+        ref={modalRef}
+        className={`relative w-full ${sizeClasses} bg-white dark:bg-gray-800 rounded-2xl shadow-2xl transform transition-all duration-300 ${
+          isAnimating
+            ? "scale-100 opacity-100"
+            : "scale-95 opacity-0"
+        } ${className}`}
+      >
         {/* Header */}
-        {(title || showCloseButton) && (
+        {title && (
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            {title && (
-              <h2 
-                id="modal-title"
-                className="text-xl font-semibold text-gray-900 dark:text-white">
-                {title}
-              </h2>
-            )}
-            
+            <h2
+              id="modal-title"
+              className={`text-xl font-bold text-gray-800 dark:text-white ${
+                isRTL ? "text-right" : "text-left"
+              }`}
+            >
+              {title}
+            </h2>
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                aria-label={t("close")}>
-                <X size={20} />
+                className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  isRTL ? "mr-auto" : "ml-auto"
+                }`}
+                aria-label={t("close")}
+              >
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
             )}
           </div>
         )}
 
-        {/* Content */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
-          {children}
-        </div>
+        {/* Body */}
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );

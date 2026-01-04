@@ -1,4 +1,4 @@
-// src/services/userService.js
+// /src/pages/admin/users/services/userService.js
 import api from '../../../../services/api';
 
 export const userService = {

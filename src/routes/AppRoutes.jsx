@@ -62,7 +62,7 @@ export default function AppRoutes() {
           />
 
           <Route
-            path="/dashboard/*"
+            path="/*"
             element={
               <ProtectedRoute requiredRole="Admin">
                 <Lazy.AdminRouter />
