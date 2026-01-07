@@ -1,4 +1,3 @@
-// src/pages/admin/projects/pages/ProjectTasksPage.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -8,32 +7,28 @@ import {
   Trash2,
   Calendar,
   User,
-  FileText,
   Search,
   Filter,
   CheckCircle,
   Clock,
   AlertCircle,
-  BarChart3,
   UserPlus,
   Pause,
   Play,
   Eye,
+  ChevronRight,
+  FileText,
+  Loader
 } from "lucide-react";
 import { taskService } from "../../services/taskService";
 import { projectService } from "../../services/projectService";
-
 import DataTableLayout from "../../../../../components/Layout/DataTableLayout";
-import DetailsCard from "../../../../../components/UI/DetailsCard";
-import StatCard from "../../../../../components/UI/StatCard";
 import ProgressBar from "../../../../../components/UI/ProgressBar";
 import Button from "../../../../../components/UI/Button";
 import Modal from "../../../../../components/UI/Modal";
-import Input from "../../../../../components/UI/InputField";
-import TextArea from "../../../../../components/UI/TextAreaField";
-import Select from "../../../../../components/UI/Select";
 import DeleteConfirmationModal from "../../../../../components/UI/DeleteConfirmationModal";
 import Toast from "../../../../../components/Toast";
+import Pagination from "../../../../../components/UI/Pagination";
 
 export default function ProjectTasksPage() {
   const { projectId } = useParams();
@@ -48,30 +43,15 @@ export default function ProjectTasksPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [tasksPerPage] = useState(10);
+  const [selectedTasks, setSelectedTasks] = useState([]);
 
   // Modal states
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
-  const [isPauseResumeModalOpen, setIsPauseResumeModalOpen] = useState(false);
+  const [pauseResumeModalOpen, setPauseResumeModalOpen] = useState(false);
   const [taskToPauseResume, setTaskToPauseResume] = useState(null);
   const [pauseResumeAction, setPauseResumeAction] = useState("");
-
-  // Form states
-  const [taskForm, setTaskForm] = useState({
-    name: "",
-    description: "",
-    start_date: "",
-    end_date: "",
-    status: 1,
-    evaluation_admin: 0,
-    notes_admin: "",
-  });
-
-  const [formErrors, setFormErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
 
   const [toast, setToast] = useState({
     show: false,
@@ -81,7 +61,7 @@ export default function ProjectTasksPage() {
 
   const isRTL = i18n.language === "ar";
 
-  // Memoized status configuration
+  // Status configuration
   const statusMap = useMemo(
     () => ({
       "Notimplemented": "notImplemented",
@@ -108,10 +88,10 @@ export default function ProjectTasksPage() {
 
   const statusIcons = useMemo(
     () => ({
-      "Notimplemented": <Clock size={16} className="text-gray-600" />,
-      "Underimplementation": <AlertCircle size={16} className="text-blue-600" />,
-      "Complete": <CheckCircle size={16} className="text-green-600" />,
-      "Pause": <Pause size={16} className="text-orange-600" />,
+      "Notimplemented": <Clock size={16} className="text-gray-600 dark:text-gray-400" />,
+      "Underimplementation": <AlertCircle size={16} className="text-blue-600 dark:text-blue-400" />,
+      "Complete": <CheckCircle size={16} className="text-green-600 dark:text-green-400" />,
+      "Pause": <Pause size={16} className="text-orange-600 dark:text-orange-400" />,
     }),
     []
   );
@@ -149,6 +129,7 @@ export default function ProjectTasksPage() {
       // Fetch tasks
       const tasksResult = await taskService.getTasksByProject(projectId);
       setTasks(tasksResult.data || []);
+      setSelectedTasks([]); // Reset selected tasks
     } catch (error) {
       const errorMessage = error.response?.data?.message || t("fetchError");
       setError(errorMessage);
@@ -169,7 +150,7 @@ export default function ProjectTasksPage() {
     return tasks.filter((task) => {
       const matchesSearch =
         task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchTerm.toLowerCase());
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         statusFilter === "all" || task.status === statusFilter;
@@ -184,144 +165,52 @@ export default function ProjectTasksPage() {
   const currentTasks = filteredTasks.slice(indexOfFirstTask, indexOfLastTask);
   const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
 
-  // Form handlers
-  const resetForm = useCallback(() => {
-    setTaskForm({
-      name: "",
-      description: "",
-      start_date: "",
-      end_date: "",
-      status: 1,
-      evaluation_admin: 0,
-      notes_admin: "",
-    });
-    setFormErrors({});
-  }, []);
+  // Selection handlers
+  const toggleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedTasks(currentTasks.map(task => task.id));
+    } else {
+      setSelectedTasks([]);
+    }
+  };
 
-  const handleInputChange = useCallback(
-    (field, value) => {
-      setTaskForm((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
+  const toggleSelectTask = (id, checked) => {
+    if (checked) {
+      setSelectedTasks([...selectedTasks, id]);
+    } else {
+      setSelectedTasks(selectedTasks.filter(taskId => taskId !== id));
+    }
+  };
 
-      // Clear error when user starts typing
-      if (formErrors[field]) {
-        setFormErrors((prev) => ({
-          ...prev,
-          [field]: "",
-        }));
+  // Bulk operations
+  const handleBulkDeleteClick = () => {
+    if (selectedTasks.length > 0) {
+      setBulkDeleteModalOpen(true);
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    try {
+      // حذف جميع المهام المحددة
+      for (const taskId of selectedTasks) {
+        await taskService.deleteTask(taskId);
       }
-    },
-    [formErrors]
-  );
-
-  const validateForm = useCallback(() => {
-    const errors = {};
-
-    if (!taskForm.name.trim()) {
-      errors.name = t("taskNameRequired");
+      
+      showToast(t("tasksDeletedSuccessfully", { count: selectedTasks.length }), "success");
+      setBulkDeleteModalOpen(false);
+      setSelectedTasks([]);
+      fetchData();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || t("deleteError");
+      showToast(errorMessage, "error");
     }
-
-    if (!taskForm.description.trim()) {
-      errors.description = t("taskDescriptionRequired");
-    }
-
-    if (!taskForm.start_date) {
-      errors.start_date = t("startDateRequired");
-    }
-
-    if (!taskForm.end_date) {
-      errors.end_date = t("endDateRequired");
-    }
-
-    if (taskForm.start_date && taskForm.end_date) {
-      const startDate = new Date(taskForm.start_date);
-      const endDate = new Date(taskForm.end_date);
-
-      if (endDate < startDate) {
-        errors.end_date = t("endDateAfterStartDate");
-      }
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [taskForm, t]);
+  };
 
   // Task operations
-  const handleCreateTask = useCallback(async () => {
-    if (!validateForm()) return;
-
-    setSubmitting(true);
-    try {
-      const taskData = {
-        ...taskForm,
-        project_id: parseInt(projectId),
-        evaluation_admin: parseInt(taskForm.evaluation_admin),
-      };
-
-      await taskService.createTask(taskData);
-
-      showToast(t("taskCreatedSuccessfully"), "success");
-      setIsCreateModalOpen(false);
-      resetForm();
-      fetchData();
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || t("createError");
-      showToast(errorMessage, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  }, [taskForm, projectId, validateForm, t, showToast, resetForm, fetchData]);
-
   const handleEditTask = useCallback((task) => {
-    setSelectedTask(task);
-    setTaskForm({
-      name: task.name,
-      description: task.description,
-      start_date: task.start_date?.split("T")[0] || "",
-      end_date: task.end_date?.split("T")[0] || "",
-      status: taskService.getStatusNumber(task.status),
-      evaluation_admin: task.evaluation_admin || 0,
-      notes_admin: task.notes_admin || "",
-    });
-    setIsEditModalOpen(true);
-  }, []);
-
-  const handleUpdateTask = useCallback(async () => {
-    if (!validateForm()) return;
-
-    setSubmitting(true);
-    try {
-      const taskData = {
-        ...taskForm,
-        project_id: parseInt(projectId),
-        evaluation_admin: parseInt(taskForm.evaluation_admin),
-      };
-
-      await taskService.updateTask(selectedTask.id, taskData);
-
-      showToast(t("taskUpdatedSuccessfully"), "success");
-      setIsEditModalOpen(false);
-      setSelectedTask(null);
-      resetForm();
-      fetchData();
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || t("updateError");
-      showToast(errorMessage, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  }, [
-    taskForm,
-    selectedTask,
-    projectId,
-    validateForm,
-    t,
-    showToast,
-    resetForm,
-    fetchData,
-  ]);
+    // الانتقال إلى صفحة تعديل المهمة
+    navigate(`/projects/${projectId}/tasks/${task.id}/edit`);
+  }, [navigate, projectId]);
 
   const handleDeleteClick = useCallback((task) => {
     setTaskToDelete(task);
@@ -331,7 +220,6 @@ export default function ProjectTasksPage() {
   const handleConfirmDelete = useCallback(async () => {
     try {
       await taskService.deleteTask(taskToDelete.id);
-
       showToast(t("taskDeletedSuccessfully"), "success");
       setDeleteModalOpen(false);
       setTaskToDelete(null);
@@ -345,13 +233,13 @@ export default function ProjectTasksPage() {
   const handlePauseTask = useCallback((task) => {
     setTaskToPauseResume(task);
     setPauseResumeAction("pause");
-    setIsPauseResumeModalOpen(true);
+    setPauseResumeModalOpen(true);
   }, []);
 
   const handleResumeTask = useCallback((task) => {
     setTaskToPauseResume(task);
     setPauseResumeAction("resume");
-    setIsPauseResumeModalOpen(true);
+    setPauseResumeModalOpen(true);
   }, []);
 
   const handleConfirmPauseResume = useCallback(async () => {
@@ -364,7 +252,7 @@ export default function ProjectTasksPage() {
         showToast(t("taskResumedSuccessfully"), "success");
       }
 
-      setIsPauseResumeModalOpen(false);
+      setPauseResumeModalOpen(false);
       setTaskToPauseResume(null);
       setPauseResumeAction("");
       fetchData();
@@ -376,9 +264,7 @@ export default function ProjectTasksPage() {
 
   const handleAssignUsers = useCallback(
     (task) => {
-      navigate(
-        `/projects/${projectId}/tasks/${task.id}/assign-users`
-      );
+      navigate(`/projects/${projectId}/tasks/${task.id}/assign-users`);
     },
     [navigate, projectId]
   );
@@ -389,11 +275,12 @@ export default function ProjectTasksPage() {
     },
     [navigate, projectId]
   );
+
   const handleAddTask = useCallback(() => {
     navigate(`/projects/${projectId}/tasks/create`);
   }, [navigate, projectId]);
 
-  // Memoized statistics
+  // Statistics
   const statistics = useMemo(() => {
     const completedTasks = tasks.filter((task) => task.status === "Complete").length;
     const inProgressTasks = tasks.filter((task) => task.status === "Underimplementation").length;
@@ -412,6 +299,218 @@ export default function ProjectTasksPage() {
           : 0,
     };
   }, [tasks]);
+
+  // Table rendering
+  const renderTasksTable = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <Loader size={32} className="animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    return (
+      <div 
+        className="bg-navbar-light dark:bg-navbar-dark rounded-xl shadow-lg border border-border overflow-hidden"
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border bg-gray-50 dark:bg-gray-800">
+                <th className="px-4 py-4 w-12">
+                  <input
+                    type="checkbox"
+                    checked={currentTasks.length > 0 && selectedTasks.length === currentTasks.length}
+                    onChange={(e) => toggleSelectAll(e.target.checked)}
+                    className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
+                  />
+                </th>
+                <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
+                  {t('taskName')}
+                </th>
+                <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
+                  {t('status')}
+                </th>
+                <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
+                  {t('dates')}
+                </th>
+                <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
+                  {t('evaluation')}
+                </th>
+                <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
+                  {t('actions')}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-900">
+              {currentTasks.length === 0 ? (
+                <tr>
+                  <td 
+                    colSpan="6" 
+                    className={`px-4 py-8 text-center text-gray-500 dark:text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}
+                  >
+                    {searchTerm || statusFilter !== "all" ? t('noTasksMatchFilters') : t('noTasksInProject')}
+                  </td>
+                </tr>
+              ) : (
+                currentTasks.map((task) => (
+                  <tr 
+                    key={task.id} 
+                    className="border-b border-border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedTasks.includes(task.id)}
+                        onChange={(e) => toggleSelectTask(task.id, e.target.checked)}
+                        className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
+                      />
+                    </td>
+                    <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <button
+                        onClick={() => handleViewTask(task.id)}
+                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-left flex items-center gap-2"
+                      >
+                        <FileText size={16} className="text-gray-400" />
+                        {task.name}
+                        <ChevronRight size={14} className="text-gray-400" />
+                      </button>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                        {task.description || t('noDescription')}
+                      </div>
+                      {task.create_by && (
+                        <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
+                          <User size={12} />
+                          {t("createdBy")}: {task.create_by}
+                        </div>
+                      )}
+                    </td>
+                    <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${
+                          statusColors[task.status] || statusColors.Notimplemented
+                        }`}
+                      >
+                        {statusIcons[task.status]}
+                        {t(getStatusText(task.status))}
+                      </span>
+                    </td>
+                    <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <div className="text-sm space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-gray-400" />
+                          <span className="text-gray-600 dark:text-gray-300">
+                            {task.start_date ? new Date(task.start_date).toLocaleDateString() : t('notSet')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-gray-400" />
+                          <span className="text-gray-600 dark:text-gray-300">
+                            {task.end_date ? new Date(task.end_date).toLocaleDateString() : t('notSet')}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-24">
+                            <ProgressBar
+                              value={(parseInt(task.evaluation_admin) || 0) * 10}
+                              height="h-2"
+                              color="blue"
+                              showPercentage={false}
+                            />
+                          </div>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                            {task.evaluation_admin || 0}/10
+                          </span>
+                        </div>
+                        {task.success_rate > 0 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {t("progress")}: {task.success_rate}%
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <button
+                          onClick={() => handleViewTask(task.id)}
+                          className="p-2 rounded-lg transition-colors text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          title={t("view")}
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleAssignUsers(task)}
+                          className="p-2 rounded-lg transition-colors text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                          title={t("assignUsers")}
+                        >
+                          <UserPlus size={16} />
+                        </button>
+                        {task.status === "Underimplementation" && (
+                          <button
+                            onClick={() => handlePauseTask(task)}
+                            className="p-2 rounded-lg transition-colors text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30"
+                            title={t("pauseTask")}
+                          >
+                            <Pause size={16} />
+                          </button>
+                        )}
+                        {task.status === "Pause" && (
+                          <button
+                            onClick={() => handleResumeTask(task)}
+                            className="p-2 rounded-lg transition-colors text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30"
+                            title={t("resumeTask")}
+                          >
+                            <Play size={16} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleEditTask(task)}
+                          className="p-2 rounded-lg transition-colors text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          title={t("edit")}
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(task)}
+                          className="p-2 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                          title={t("delete")}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {filteredTasks.length > 0 && (
+          <div className="px-4 py-4 border-t border-border bg-white dark:bg-gray-900">
+            <Pagination
+              pagination={{
+                currentPage,
+                totalPages,
+                totalCount: filteredTasks.length,
+                perPage: tasksPerPage
+              }}
+              onPageChange={setCurrentPage}
+              itemsName="tasks"
+              showProgress={true}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Stats for DataTableLayout
   const stats = useMemo(
@@ -472,7 +571,10 @@ export default function ProjectTasksPage() {
       backLabel={t("backToProject")}
       showAddButton={true}
       addButtonLabel={t("addTask")}
-      onAddClick={() => setIsCreateModalOpen(true)}
+      onAddClick={handleAddTask}
+      showBulkDelete={selectedTasks.length > 0}
+      onBulkDelete={handleBulkDeleteClick}
+      bulkDeleteLabel={`${t("delete")} (${selectedTasks.length})`}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
       searchPlaceholder={t("searchTasks")}
@@ -483,7 +585,7 @@ export default function ProjectTasksPage() {
       stats={stats}
       loading={loading}
       error={error || (!project && !loading ? t("projectNotFound") : null)}
-      isEmpty={currentTasks.length === 0}
+      isEmpty={filteredTasks.length === 0}
       emptyMessage={
         searchTerm || statusFilter !== "all"
           ? t("noTasksMatchFilters")
@@ -491,178 +593,13 @@ export default function ProjectTasksPage() {
       }
       emptyAction={{
         label: t("createFirstTask"),
-        onClick: () => handleAddTask(),
+        onClick: handleAddTask,
       }}
       isRTL={isRTL}
       hiddenStats={true}
       projectId={projectId}
     >
-      {/* Tasks Table */}
-      <DetailsCard className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
-                <th className="py-4 px-6 text-left font-semibold text-gray-600 dark:text-gray-300">
-                  {t("taskName")}
-                </th>
-                <th className="py-4 px-6 text-left font-semibold text-gray-600 dark:text-gray-300">
-                  {t("status")}
-                </th>
-                <th className="py-4 px-6 text-left font-semibold text-gray-600 dark:text-gray-300">
-                  {t("dates")}
-                </th>
-                <th className="py-4 px-6 text-left font-semibold text-gray-600 dark:text-gray-300">
-                  {t("evaluation")}
-                </th>
-                <th className="py-4 px-6 text-left font-semibold text-gray-600 dark:text-gray-300">
-                  {t("actions")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentTasks.map((task) => (
-                <tr
-                  key={task.id}
-                  className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <td className="py-4 px-6">
-                    <div>
-                      <button
-                        onClick={() => handleViewTask(task.id)}
-                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-left"
-                      >
-                        {task.name}
-                      </button>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                        {task.description}
-                      </div>
-                      {task.create_by && (
-                        <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
-                          <User size={12} />
-                          {t("createdBy")}: {task.create_by}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${
-                        statusColors[task.status] || statusColors.Notimplemented
-                      }`}
-                    >
-                      {statusIcons[task.status]}
-                      {t(getStatusText(task.status))}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-gray-400" />
-                        <span className="text-gray-600 dark:text-gray-300">
-                          {new Date(task.start_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-gray-400" />
-                        <span className="text-gray-600 dark:text-gray-300">
-                          {new Date(task.end_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20">
-                          <ProgressBar
-                            value={(parseInt(task.evaluation_admin) || 0) * 10}
-                            height="h-2"
-                            color="blue"
-                            showPercentage={false}
-                          />
-                        </div>
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                          {task.evaluation_admin || 0}/10
-                        </span>
-                      </div>
-                      {task.success_rate > 0 && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {t("progress")}: {task.success_rate}%
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleViewTask(task.id)}
-                        variant="ghost"
-                        size="sm"
-                        className="p-2"
-                        title={t("view")}
-                      >
-                        <Eye size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleAssignUsers(task)}
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 text-purple-600"
-                        title={t("assignUsers")}
-                      >
-                        <UserPlus size={14} />
-                      </button>
-                      {task.status === "Underimplementation" && (
-                        <button
-                          onClick={() => handlePauseTask(task)}
-                          variant="ghost"
-                          size="sm"
-                          className="p-2 text-orange-600"
-                          title={t("pauseTask")}
-                        >
-                          <Pause size={14} />
-                        </button>
-                      )}
-                      {task.status === "Pause" && (
-                        <button
-                          onClick={() => handleResumeTask(task)}
-                          variant="ghost"
-                          size="sm"
-                          className="p-2 text-green-600"
-                          title={t("resumeTask")}
-                        >
-                          <Play size={14} />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleEditTask(task)}
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 text-blue-600"
-                        title={t("edit")}
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(task)}
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 text-red-600"
-                        title={t("delete")}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </DetailsCard>
-
-    
+      {renderTasksTable()}
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
@@ -674,13 +611,24 @@ export default function ProjectTasksPage() {
         onConfirm={handleConfirmDelete}
         itemName={taskToDelete?.name}
         type="task"
+        count={1}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={bulkDeleteModalOpen}
+        onClose={() => setBulkDeleteModalOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+        itemName=""
+        type="task"
+        count={selectedTasks.length}
       />
 
       {/* Pause/Resume Confirmation Modal */}
       <Modal
-        isOpen={isPauseResumeModalOpen}
+        isOpen={pauseResumeModalOpen}
         onClose={() => {
-          setIsPauseResumeModalOpen(false);
+          setPauseResumeModalOpen(false);
           setTaskToPauseResume(null);
           setPauseResumeAction("");
         }}
@@ -697,7 +645,7 @@ export default function ProjectTasksPage() {
             <Button
               variant="secondary"
               onClick={() => {
-                setIsPauseResumeModalOpen(false);
+                setPauseResumeModalOpen(false);
                 setTaskToPauseResume(null);
                 setPauseResumeAction("");
               }}

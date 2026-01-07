@@ -197,9 +197,7 @@ export default function UsersPage() {
     <div className="min-h-screen p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
       {/* HEADER */}
       <div
-        className={`flex justify-between items-center mb-6 ${
-          isRTL ? "flex-row-reverse" : ""
-        }`}
+        className={`flex justify-between items-center mb-6 `}
       >
         <div>
           <h1 className="text-3xl font-bold">{t("usersManagement")}</h1>

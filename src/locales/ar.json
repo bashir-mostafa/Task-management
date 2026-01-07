@@ -296,5 +296,19 @@
   "removeSelected": "إزالة المحدد",
   "clearSelection": "مسح المحددات",
   "usersRemovedSuccessfully": "تمت إزالة المستخدمين بنجاح",
-  "usersAssignedSuccessfully": "تم تعيين المستخدمين بنجاح"
+  "usersAssignedSuccessfully": "تم تعيين المستخدمين بنجاح",
+  "loggedInAs": "مسجل الدخول كـ ",
+  "editProjectDescription": "تعديل تفاصيل المشروع الحالي وإدارته بكفاءة.",
+  "statusOptions": {
+    "planning": "التخطيط",
+    "Underimplementation": "تحت التنفيذ",
+    "Complete": "مكتمل",
+    "Pause": "متوقف",
+    "Notimplemented": "غير منفذ",
+    "completed": "مكتمل",
+    "paused": "متوقف",
+    "NotImplemented": "غير منفذ",
+    "underImplementation": "تحت التنفيذ"
+  },
+  "manageProjectUsers": "إدارة مستخدمي المشروع"
 }

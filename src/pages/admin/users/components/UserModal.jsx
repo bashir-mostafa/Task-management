@@ -1,5 +1,5 @@
-// src/components/Users/UserModal.jsx
-import React, { useState, useEffect } from 'react';
+// UserModal.jsx - التعديلات
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, User } from 'lucide-react';
 import UserForm from './UserForm/UserForm';
@@ -25,14 +25,14 @@ export default function UserModal({ open, onClose, onSave, user }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in overflow-y-auto">
       <div 
-        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl w-full max-w-sm" // عرض أصغر
+        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl w-full max-w-2xl my-4"
         onClick={(e) => e.stopPropagation()}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        {/* الهيدر المضغوط */}
-        <div className={`flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-t-xl ${
+        {/* الهيدر ثابت */}
+        <div className={`sticky top-0 z-10 flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-t-xl ${
           isRTL ? 'flex-row-reverse' : ''
         }`}>
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -40,9 +40,12 @@ export default function UserModal({ open, onClose, onSave, user }) {
               <User size={16} className="text-blue-600 dark:text-blue-400" />
             </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
-              <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
                 {isEditing ? t('editUser') : t('addUser')}
               </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {isEditing ? t('updatePasswordOnly') : t('createNewUser')}
+              </p>
             </div>
           </div>
           <button
@@ -53,15 +56,17 @@ export default function UserModal({ open, onClose, onSave, user }) {
           </button>
         </div>
 
-        {/* الفورم المضغوط */}
-        <UserForm
-          user={user}
-          onSubmit={handleSubmit}
-          onClose={onClose}
-          isSubmitting={isSubmitting}
-          isRTL={isRTL}
-          colorTheme={colorTheme}
-        />
+        {/* المحتوى مع Scroll */}
+        <div className="max-h-[70vh] overflow-y-auto">
+          <UserForm
+            user={user}
+            onSubmit={handleSubmit}
+            onClose={onClose}
+            isSubmitting={isSubmitting}
+            isRTL={isRTL}
+            colorTheme={colorTheme}
+          />
+        </div>
       </div>
     </div>
   );

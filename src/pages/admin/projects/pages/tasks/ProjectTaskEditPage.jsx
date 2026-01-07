@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Save } from "lucide-react";
+import { Save, Star, Flag } from "lucide-react";
 import { taskService } from "../../services/taskService";
 import PageHeader from "../../../../../components/common/PageHeader";
 import FormContainer from "../../../../../components/common/FormContainer";
@@ -9,7 +9,7 @@ import FormActions from "../../../../../components/common/FormActions";
 import DateFields from "../../../../../components/common/DateFields";
 import Input from "../../../../../components/UI/InputField";
 import TextArea from "../../../../../components/UI/TextAreaField";
-import Select from "../../../../../components/UI/Select";
+import Dropdown from "../../../../../components/UI/Dropdown";
 import Toast from "../../../../../components/Toast";
 import LoadingSpinner from "../../../../../components/UI/LoadingSpinner";
 
@@ -21,7 +21,7 @@ export default function ProjectTaskEditPage() {
   const [task, setTask] = useState({
     name: "",
     description: "",
-    status: 1,
+    status: "Notimplemented",
     start_date: "",
     end_date: "",
     evaluation_admin: 0,
@@ -33,6 +33,7 @@ export default function ProjectTaskEditPage() {
   const [error, setError] = useState("");
   const [formErrors, setFormErrors] = useState({});
   const [isRTL] = useState(i18n.language === "ar");
+  const [hoveredStar, setHoveredStar] = useState(0);
 
   const [toast, setToast] = useState({
     show: false,
@@ -48,6 +49,14 @@ export default function ProjectTaskEditPage() {
     setToast((prev) => ({ ...prev, show: false }));
   }, []);
 
+  // تعريف الحالات بناءً على الـ Enum
+  const statusOptions = [
+    { value: "Notimplemented", label: t("statusOptions.Notimplemented") },
+    { value: "Underimplementation", label: t("statusOptions.underImplementation") },
+    { value: "Complete", label: t("statusOptions.completed") },
+    { value: "Pause", label: t("statusOptions.paused") }
+  ];
+
   useEffect(() => {
     fetchTask();
   }, [taskId]);
@@ -61,7 +70,7 @@ export default function ProjectTaskEditPage() {
         setTask({
           name: response.name || "",
           description: response.description || "",
-          status: taskService.getStatusNumber(response.status) || 1,
+          status: response.status || "Notimplemented",
           start_date: response.start_date?.split('T')[0] || "",
           end_date: response.end_date?.split('T')[0] || "",
           evaluation_admin: response.evaluation_admin || 0,
@@ -126,9 +135,14 @@ export default function ProjectTaskEditPage() {
     
     try {
       const taskData = {
-        ...task,
+        name: task.name,
+        description: task.description,
+        status: task.status,
+        start_date: task.start_date,
+        end_date: task.end_date,
+        evaluation_admin: parseFloat(task.evaluation_admin),
+        notes_admin: task.notes_admin,
         project_id: parseInt(projectId),
-        evaluation_admin: parseInt(task.evaluation_admin),
       };
 
       await taskService.updateTask(taskId, taskData);
@@ -149,11 +163,50 @@ export default function ProjectTaskEditPage() {
   };
 
   const handleChange = (field, value) => {
+    console.log(`Changing ${field} to:`, value);
     setTask(prev => ({ ...prev, [field]: value }));
 
     if (formErrors[field]) {
       setFormErrors(prev => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const handleStarClick = (value) => {
+    setTask(prev => ({ ...prev, evaluation_admin: value }));
+  };
+
+  const renderStars = () => {
+    const stars = [];
+    const currentValue = parseFloat(task.evaluation_admin) || 0;
+    
+    for (let i = 1; i <= 5; i++) {
+      const isFilled = hoveredStar ? i <= hoveredStar : i <= currentValue;
+      const isHalf = !hoveredStar && (i - 0.5 <= currentValue && currentValue < i);
+      
+      stars.push(
+        <button
+          key={i}
+          type="button"
+          onClick={() => handleStarClick(i)}
+          onMouseEnter={() => setHoveredStar(i)}
+          onMouseLeave={() => setHoveredStar(0)}
+          className="p-1 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+        >
+          <Star
+            size={28}
+            className={
+              isFilled
+                ? "text-yellow-500 fill-yellow-500"
+                : isHalf
+                ? "text-yellow-500 fill-yellow-500 opacity-50"
+                : "text-gray-300 dark:text-gray-600"
+            }
+          />
+        </button>
+      );
+    }
+    
+    return stars;
   };
 
   if (loading) {
@@ -185,6 +238,7 @@ export default function ProjectTaskEditPage() {
             onChange={(e) => handleChange("name", e.target.value)}
             error={formErrors.name}
             required
+            isRTL={isRTL}
           />
 
           <TextArea
@@ -209,28 +263,65 @@ export default function ProjectTaskEditPage() {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Select
-              label={t("status")}
-              name="status"
-              value={task.status}
-              onChange={(e) => handleChange("status", parseInt(e.target.value))}
-            >
-              <option value={0}>{t("notImplemented")}</option>
-              <option value={1}>{t("underImplementation")}</option>
-              <option value={2}>{t("completed")}</option>
-            </Select>
+            {/* Dropdown للحالة */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                {t("status")} *
+              </label>
+              <Dropdown
+                label=""
+                name="status"
+                value={task.status}
+                onChange={(value) => handleChange("status", value)}
+                options={statusOptions}
+                placeholder={t("selectStatus")}
+                icon={<Flag size={16} />}
+                helpText={t("selectStatusHelp")}
+                isSearchable={false}
+                className="w-full"
+              />
+            </div>
 
-            <Input
-              type="number"
-              label={`${t("evaluation")} (0-10)`}
-              name="evaluation_admin"
-              value={task.evaluation_admin}
-              onChange={(e) => handleChange("evaluation_admin", e.target.value)}
-              min="0"
-              max="10"
-              step="0.5"
-              placeholder="0-10"
-            />
+            {/* نظام النجوم للتقييم */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                {t("evaluation")} (0-5)
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center">
+                  {renderStars()}
+                </div>
+                <div className="ml-2">
+                  <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                    {task.evaluation_admin || 0}/5
+                  </span>
+                </div>
+              </div>
+              <input
+                type="hidden"
+                name="evaluation_admin"
+                value={task.evaluation_admin}
+              />
+              <div className="flex gap-2 mt-2">
+                {[0, 1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => handleStarClick(value)}
+                    className={`px-2 py-1 text-xs rounded ${
+                      parseFloat(task.evaluation_admin) === value
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {t("clickToRate")}
+              </div>
+            </div>
           </div>
 
           <TextArea
