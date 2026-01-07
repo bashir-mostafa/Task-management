@@ -42,7 +42,7 @@ export const taskService = {
       start_date: taskData.start_date,
       end_date: taskData.end_date,
       status: getStatusText(taskData.status), // Convert number to string
-      evaluation_admin: taskData.evaluation_admin || 0,
+      evaluation_admin: taskData.evaluation_admin || null,
       notes_admin: taskData.notes_admin || ""
     };
 

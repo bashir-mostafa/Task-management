@@ -18,7 +18,9 @@ import {
   Eye,
   ChevronRight,
   FileText,
-  Loader
+  Loader,
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { taskService } from "../../services/taskService";
 import { projectService } from "../../services/projectService";
@@ -48,10 +50,9 @@ export default function ProjectTasksPage() {
   // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
-  const [pauseResumeModalOpen, setPauseResumeModalOpen] = useState(false);
-  const [taskToPauseResume, setTaskToPauseResume] = useState(null);
-  const [pauseResumeAction, setPauseResumeAction] = useState("");
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [bulkPauseModalOpen, setBulkPauseModalOpen] = useState(false);
+  const [bulkResumeModalOpen, setBulkResumeModalOpen] = useState(false);
 
   const [toast, setToast] = useState({
     show: false,
@@ -189,6 +190,18 @@ export default function ProjectTasksPage() {
     }
   };
 
+  const handleBulkPauseClick = () => {
+    if (selectedTasks.length > 0) {
+      setBulkPauseModalOpen(true);
+    }
+  };
+
+  const handleBulkResumeClick = () => {
+    if (selectedTasks.length > 0) {
+      setBulkResumeModalOpen(true);
+    }
+  };
+
   const handleConfirmBulkDelete = async () => {
     try {
       // حذف جميع المهام المحددة
@@ -196,7 +209,10 @@ export default function ProjectTasksPage() {
         await taskService.deleteTask(taskId);
       }
       
-      showToast(t("tasksDeletedSuccessfully", { count: selectedTasks.length }), "success");
+      showToast(
+        t("tasksDeletedSuccessfully", { count: selectedTasks.length }), 
+        "success"
+      );
       setBulkDeleteModalOpen(false);
       setSelectedTasks([]);
       fetchData();
@@ -206,9 +222,94 @@ export default function ProjectTasksPage() {
     }
   };
 
+  const handleConfirmBulkPause = async () => {
+    try {
+      let pausedCount = 0;
+      let failedCount = 0;
+      
+      // إيقاف المهام المحددة
+      for (const taskId of selectedTasks) {
+        try {
+          const task = tasks.find(t => t.id === taskId);
+          if (task && task.status === "Underimplementation") {
+            await taskService.pauseTask(taskId);
+            pausedCount++;
+          } else {
+            failedCount++;
+          }
+        } catch (error) {
+          failedCount++;
+        }
+      }
+      
+      if (pausedCount > 0) {
+        showToast(
+          t("tasksPausedSuccessfully", { count: pausedCount }), 
+          "success"
+        );
+      }
+      
+      if (failedCount > 0) {
+        showToast(
+          t("someTasksNotPaused", { count: failedCount }), 
+          "warning"
+        );
+      }
+      
+      setBulkPauseModalOpen(false);
+      setSelectedTasks([]);
+      fetchData();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || t("actionError");
+      showToast(errorMessage, "error");
+    }
+  };
+
+  const handleConfirmBulkResume = async () => {
+    try {
+      let resumedCount = 0;
+      let failedCount = 0;
+      
+      // استئناف المهام المحددة
+      for (const taskId of selectedTasks) {
+        try {
+          const task = tasks.find(t => t.id === taskId);
+          if (task && task.status === "Pause") {
+            await taskService.resumeTask(taskId);
+            resumedCount++;
+          } else {
+            failedCount++;
+          }
+        } catch (error) {
+          failedCount++;
+        }
+      }
+      
+      if (resumedCount > 0) {
+        showToast(
+          t("tasksResumedSuccessfully", { count: resumedCount }), 
+          "success"
+        );
+      }
+      
+      if (failedCount > 0) {
+        showToast(
+          t("someTasksNotResumed", { count: failedCount }), 
+          "warning"
+        );
+      }
+      
+      setBulkResumeModalOpen(false);
+      setSelectedTasks([]);
+      fetchData();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || t("actionError");
+      showToast(errorMessage, "error");
+    }
+  };
+
   // Task operations
   const handleEditTask = useCallback((task) => {
-    // الانتقال إلى صفحة تعديل المهمة
     navigate(`/projects/${projectId}/tasks/${task.id}/edit`);
   }, [navigate, projectId]);
 
@@ -230,37 +331,27 @@ export default function ProjectTasksPage() {
     }
   }, [taskToDelete, t, showToast, fetchData]);
 
-  const handlePauseTask = useCallback((task) => {
-    setTaskToPauseResume(task);
-    setPauseResumeAction("pause");
-    setPauseResumeModalOpen(true);
-  }, []);
-
-  const handleResumeTask = useCallback((task) => {
-    setTaskToPauseResume(task);
-    setPauseResumeAction("resume");
-    setPauseResumeModalOpen(true);
-  }, []);
-
-  const handleConfirmPauseResume = useCallback(async () => {
+  const handlePauseTask = useCallback(async (task) => {
     try {
-      if (pauseResumeAction === "pause") {
-        await taskService.pauseTask(taskToPauseResume.id);
-        showToast(t("taskPausedSuccessfully"), "success");
-      } else {
-        await taskService.resumeTask(taskToPauseResume.id);
-        showToast(t("taskResumedSuccessfully"), "success");
-      }
-
-      setPauseResumeModalOpen(false);
-      setTaskToPauseResume(null);
-      setPauseResumeAction("");
+      await taskService.pauseTask(task.id);
+      showToast(t("taskPausedSuccessfully"), "success");
       fetchData();
     } catch (error) {
       const errorMessage = error.response?.data?.message || t("actionError");
       showToast(errorMessage, "error");
     }
-  }, [pauseResumeAction, taskToPauseResume, t, showToast, fetchData]);
+  }, [t, showToast, fetchData]);
+
+  const handleResumeTask = useCallback(async (task) => {
+    try {
+      await taskService.resumeTask(task.id);
+      showToast(t("taskResumedSuccessfully"), "success");
+      fetchData();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || t("actionError");
+      showToast(errorMessage, "error");
+    }
+  }, [t, showToast, fetchData]);
 
   const handleAssignUsers = useCallback(
     (task) => {
@@ -315,17 +406,118 @@ export default function ProjectTasksPage() {
         className="bg-navbar-light dark:bg-navbar-dark rounded-xl shadow-lg border border-border overflow-hidden"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
+        {selectedTasks.length > 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b border-blue-100 dark:border-blue-800/30 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                  <FileText size={18} className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                    {t("selectedTasks", { count: selectedTasks.length })}
+                  </h3>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    {t("selectAll")} • {t("clearSelection")}
+                  </p>
+                </div>
+              </div>
+              <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                {/* زر الإيقاف - تصميم متميز */}
+                <button
+                  onClick={handleBulkPauseClick}
+                  className="group relative overflow-hidden px-4 py-2.5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-700/40 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2.5"
+                  title={t("pauseSelected")}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center justify-center w-8 h-8 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-800 dark:to-amber-800 rounded-lg">
+                    <Pause size={16} className="text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div className="relative text-left">
+                    <div className="text-sm font-semibold text-orange-700 dark:text-orange-300">
+                      {t("pause")}
+                    </div>
+                    <div className="text-xs text-orange-600/70 dark:text-orange-400/70">
+                      {t("pauseSelected")}
+                    </div>
+                  </div>
+                </button>
+
+                {/* زر الاستئناف - تصميم متميز */}
+                <button
+                  onClick={handleBulkResumeClick}
+                  className="group relative overflow-hidden px-4 py-2.5 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border border-emerald-200 dark:border-emerald-700/40 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2.5"
+                  title={t("resumeSelected")}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center justify-center w-8 h-8 bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-800 dark:to-green-800 rounded-lg">
+                    <Play size={16} className="text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="relative text-left">
+                    <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                      {t("resume")}
+                    </div>
+                    <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70">
+                      {t("resumeSelected")}
+                    </div>
+                  </div>
+                </button>
+
+                {/* زر الحذف - تصميم متميز */}
+                <button
+                  onClick={handleBulkDeleteClick}
+                  className="group relative overflow-hidden px-4 py-2.5 bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 border border-rose-200 dark:border-rose-700/40 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2.5"
+                  title={t("deleteSelected")}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center justify-center w-8 h-8 bg-gradient-to-br from-rose-100 to-red-100 dark:from-rose-800 dark:to-red-800 rounded-lg">
+                    <Trash2 size={16} className="text-rose-600 dark:text-rose-400" />
+                  </div>
+                  <div className="relative text-left">
+                    <div className="text-sm font-semibold text-rose-700 dark:text-rose-300">
+                      {t("delete")}
+                    </div>
+                    <div className="text-xs text-rose-600/70 dark:text-rose-400/70">
+                      {t("deleteSelected")}
+                    </div>
+                  </div>
+                </button>
+
+                {/* زر مسح التحديد - تصميم متميز */}
+                <button
+                  onClick={() => setSelectedTasks([])}
+                  className="group relative overflow-hidden px-4 py-2.5 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 border border-slate-200 dark:border-slate-700/40 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2.5"
+                  title={t("clearSelection")}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-500/10 to-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center justify-center w-8 h-8 bg-gradient-to-br from-slate-100 to-gray-100 dark:from-slate-800 dark:to-gray-800 rounded-lg">
+                    <RefreshCw size={16} className="text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <div className="relative text-left">
+                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      {t("clear")}
+                    </div>
+                    <div className="text-xs text-slate-600/70 dark:text-slate-400/70">
+                      {t("clearSelection")}
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-gray-50 dark:bg-gray-800">
                 <th className="px-4 py-4 w-12">
-                  <input
+                  {/* <input
                     type="checkbox"
                     checked={currentTasks.length > 0 && selectedTasks.length === currentTasks.length}
                     onChange={(e) => toggleSelectAll(e.target.checked)}
                     className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
-                  />
+                  /> */}
                 </th>
                 <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('taskName')}
@@ -358,15 +550,19 @@ export default function ProjectTasksPage() {
                 currentTasks.map((task) => (
                   <tr 
                     key={task.id} 
-                    className="border-b border-border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className={`border-b border-border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                      selectedTasks.includes(task.id) 
+                        ? 'bg-blue-50 dark:bg-blue-900/10' 
+                        : ''
+                    }`}
                   >
                     <td className="px-4 py-4">
-                      <input
+                      {/* <input
                         type="checkbox"
                         checked={selectedTasks.includes(task.id)}
                         onChange={(e) => toggleSelectTask(task.id, e.target.checked)}
                         className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
-                      />
+                      /> */}
                     </td>
                     <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
                       <button
@@ -418,14 +614,14 @@ export default function ProjectTasksPage() {
                         <div className="flex items-center gap-2">
                           <div className="w-24">
                             <ProgressBar
-                              value={(parseInt(task.evaluation_admin) || 0) * 10}
+                              value={(parseInt(task.evaluation_admin) || 0) * 20}
                               height="h-2"
                               color="blue"
                               showPercentage={false}
                             />
                           </div>
                           <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                            {task.evaluation_admin || 0}/10
+                            {task.evaluation_admin || 0}/5
                           </span>
                         </div>
                         {task.success_rate > 0 && (
@@ -563,6 +759,31 @@ export default function ProjectTasksPage() {
     },
   ];
 
+  // Bulk actions for DataTableLayout
+  const bulkActions = [
+    {
+      label: t("pause"),
+      onClick: handleBulkPauseClick,
+      icon: <Pause size={16} />,
+      variant: "warning",
+      disabled: selectedTasks.length === 0,
+    },
+    {
+      label: t("resume"),
+      onClick: handleBulkResumeClick,
+      icon: <Play size={16} />,
+      variant: "success",
+      disabled: selectedTasks.length === 0,
+    },
+    {
+      label: `${t("delete")} (${selectedTasks.length})`,
+      onClick: handleBulkDeleteClick,
+      icon: <Trash2 size={16} />,
+      variant: "danger",
+      disabled: selectedTasks.length === 0,
+    },
+  ];
+
   return (
     <DataTableLayout
       title={t("taskManagement")}
@@ -575,6 +796,8 @@ export default function ProjectTasksPage() {
       showBulkDelete={selectedTasks.length > 0}
       onBulkDelete={handleBulkDeleteClick}
       bulkDeleteLabel={`${t("delete")} (${selectedTasks.length})`}
+      bulkActions={bulkActions}
+      selectedCount={selectedTasks.length}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
       searchPlaceholder={t("searchTasks")}
@@ -592,7 +815,7 @@ export default function ProjectTasksPage() {
           : t("noTasksInProject")
       }
       emptyAction={{
-        label: t("createFirstTask"),
+        label: t("createTask"),
         onClick: handleAddTask,
       }}
       isRTL={isRTL}
@@ -624,40 +847,69 @@ export default function ProjectTasksPage() {
         count={selectedTasks.length}
       />
 
-      {/* Pause/Resume Confirmation Modal */}
+      {/* Bulk Pause Confirmation Modal */}
       <Modal
-        isOpen={pauseResumeModalOpen}
-        onClose={() => {
-          setPauseResumeModalOpen(false);
-          setTaskToPauseResume(null);
-          setPauseResumeAction("");
-        }}
-        title={pauseResumeAction === "pause" ? t("pauseTask") : t("resumeTask")}
+        isOpen={bulkPauseModalOpen}
+        onClose={() => setBulkPauseModalOpen(false)}
+        title={t("pauseSelectedTasks")}
         size="md"
       >
         <div className="space-y-4">
-          <p className="text-gray-600 dark:text-gray-300">
-            {pauseResumeAction === "pause"
-              ? t("confirmPauseTask", { taskName: taskToPauseResume?.name })
-              : t("confirmResumeTask", { taskName: taskToPauseResume?.name })}
-          </p>
+          <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+            <AlertTriangle size={20} className="text-orange-600 dark:text-orange-400" />
+            <p className="text-sm text-orange-700 dark:text-orange-300">
+              {t("confirmBulkPause", { count: selectedTasks.length })}
+            </p>
+          </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button
               variant="secondary"
-              onClick={() => {
-                setPauseResumeModalOpen(false);
-                setTaskToPauseResume(null);
-                setPauseResumeAction("");
-              }}
+              onClick={() => setBulkPauseModalOpen(false)}
+              className="px-4 py-2"
             >
               {t("cancel")}
             </Button>
             <Button
-              onClick={handleConfirmPauseResume}
-              variant={pauseResumeAction === "pause" ? "warning" : "primary"}
-              className="flex items-center gap-2"
+              onClick={handleConfirmBulkPause}
+              variant="warning"
+              className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
             >
-              {pauseResumeAction === "pause" ? t("pause") : t("resume")}
+              <Pause size={16} />
+              {t("pauseSelectedTasks")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bulk Resume Confirmation Modal */}
+      <Modal
+        isOpen={bulkResumeModalOpen}
+        onClose={() => setBulkResumeModalOpen(false)}
+        title={t("resumeSelectedTasks")}
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+            <RefreshCw size={20} className="text-emerald-600 dark:text-emerald-400" />
+            <p className="text-sm text-emerald-700 dark:text-emerald-300">
+              {t("confirmBulkResume", { count: selectedTasks.length })}
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setBulkResumeModalOpen(false)}
+              className="px-4 py-2"
+            >
+              {t("cancel")}
+            </Button>
+            <Button
+              onClick={handleConfirmBulkResume}
+              variant="success"
+              className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
+            >
+              <Play size={16} />
+              {t("resumeSelectedTasks")}
             </Button>
           </div>
         </div>
