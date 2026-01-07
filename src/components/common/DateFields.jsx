@@ -21,7 +21,6 @@ export default function DateFields({
         onChange={onStartDateChange}
         error={startDateError}
         isRTL= {isRTL}
-        required
       />
       
       <Input
@@ -32,7 +31,6 @@ export default function DateFields({
         onChange={onEndDateChange}
         error={endDateError}
         isRTL= {isRTL}
-        required
       />
     </div>
   );

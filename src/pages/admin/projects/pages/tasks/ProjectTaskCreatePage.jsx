@@ -10,7 +10,6 @@ import FormActions from "../../../../../components/common/FormActions";
 import DateFields from "../../../../../components/common/DateFields";
 import Input from "../../../../../components/UI/InputField";
 import TextArea from "../../../../../components/UI/TextAreaField";
-import Select from "../../../../../components/UI/Select";
 import Toast from "../../../../../components/Toast";
 import LoadingSpinner from "../../../../../components/UI/LoadingSpinner";
 
@@ -26,10 +25,8 @@ export default function ProjectTaskCreatePage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    start_date: "",
-    end_date: "",
-    status: 1,
-    evaluation_admin: 0,
+    start_date: null,
+    end_date: null,
     notes_admin: "",
   });
 
@@ -90,14 +87,7 @@ export default function ProjectTaskCreatePage() {
       errors.description = t("taskDescriptionRequired");
     }
 
-    if (!formData.start_date) {
-      errors.start_date = t("startDateRequired");
-    }
-
-    if (!formData.end_date) {
-      errors.end_date = t("endDateRequired");
-    }
-
+    // التحقق من صحة التواريخ إذا كانت موجودة
     if (formData.start_date && formData.end_date) {
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
@@ -122,11 +112,29 @@ export default function ProjectTaskCreatePage() {
     setSubmitting(true);
 
     try {
+      // تحضير البيانات لإرسالها
       const taskData = {
-        ...formData,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
         project_id: parseInt(projectId),
-        evaluation_admin: parseInt(formData.evaluation_admin),
+        notes_admin: formData.notes_admin?.trim() || null, // إذا كانت فارغة ترسل null
+        // لا نرسل الحالة - سيعتمد النظام على الافتراضي
       };
+
+      // إضافة التواريخ فقط إذا كانت موجودة وغير فارغة
+      if (formData.start_date && formData.start_date.trim()) {
+        taskData.start_date = formData.start_date;
+      } else {
+        taskData.start_date = null; // إرسال null إذا كان فارغاً
+      }
+
+      if (formData.end_date && formData.end_date.trim()) {
+        taskData.end_date = formData.end_date;
+      } else {
+        taskData.end_date = null; // إرسال null إذا كان فارغاً
+      }
+
+      console.log("Sending task data:", taskData);
 
       await taskService.createTask(taskData);
 
@@ -155,6 +163,12 @@ export default function ProjectTaskCreatePage() {
         [field]: "",
       }));
     }
+  };
+
+  const handleDateChange = (field, value) => {
+    // السماح بحذف التاريخ (إرسال string فارغ)
+    const dateValue = value || "";
+    handleChange(field, dateValue);
   };
 
   if (loading) {
@@ -203,6 +217,7 @@ export default function ProjectTaskCreatePage() {
               error={formErrors.name}
               required
               placeholder={t("enterTaskName")}
+              isRTL={isRTL}
             />
 
             <TextArea
@@ -216,40 +231,46 @@ export default function ProjectTaskCreatePage() {
               placeholder={t("enterTaskDescription")}
             />
 
-            <DateFields
-              startDate={formData.start_date}
-              endDate={formData.end_date}
-              onStartDateChange={(e) => handleChange("start_date", e.target.value)}
-              onEndDateChange={(e) => handleChange("end_date", e.target.value)}
-              startDateError={formErrors.start_date}
-              endDateError={formErrors.end_date}
-              t={t}
-              isRTL={isRTL}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select
-                label={t("status")}
-                name="status"
-                value={formData.status}
-                onChange={(e) => handleChange("status", parseInt(e.target.value))}
-              >
-                <option value={0}>{t("notImplemented")}</option>
-                <option value={1}>{t("underImplementation")}</option>
-                <option value={2}>{t("completed")}</option>
-              </Select>
-
-              <Input
-                type="number"
-                label={`${t("evaluation")} (0-10)`}
-                name="evaluation_admin"
-                value={formData.evaluation_admin}
-                onChange={(e) => handleChange("evaluation_admin", e.target.value)}
-                min="0"
-                max="10"
-                step="0.5"
-                placeholder="0-10"
-              />
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                {t("dates")} ({t("optional")})
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                    {t("startDate")}
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.start_date || ""}
+                    onChange={(e) => handleDateChange("start_date", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                  {formErrors.start_date && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.start_date}</p>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {t("startDateOptional")}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                    {t("endDate")}
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.end_date || ""}
+                    onChange={(e) => handleDateChange("end_date", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                  {formErrors.end_date && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.end_date}</p>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {t("endDateOptional")}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <TextArea
@@ -260,6 +281,8 @@ export default function ProjectTaskCreatePage() {
               rows={3}
               placeholder={t("enterAdminNotes")}
             />
+
+           
 
             <FormActions
               isRTL={isRTL}

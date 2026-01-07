@@ -6,7 +6,6 @@ import { taskService } from "../../services/taskService";
 import PageHeader from "../../../../../components/common/PageHeader";
 import FormContainer from "../../../../../components/common/FormContainer";
 import FormActions from "../../../../../components/common/FormActions";
-import DateFields from "../../../../../components/common/DateFields";
 import Input from "../../../../../components/UI/InputField";
 import TextArea from "../../../../../components/UI/TextAreaField";
 import Dropdown from "../../../../../components/UI/Dropdown";
@@ -101,14 +100,7 @@ export default function ProjectTaskEditPage() {
       errors.description = t("taskDescriptionRequired");
     }
 
-    if (!task.start_date) {
-      errors.start_date = t("startDateRequired");
-    }
-
-    if (!task.end_date) {
-      errors.end_date = t("endDateRequired");
-    }
-
+    // التحقق فقط إذا كان كلا التاريخين موجودين
     if (task.start_date && task.end_date) {
       const startDate = new Date(task.start_date);
       const endDate = new Date(task.end_date);
@@ -134,16 +126,32 @@ export default function ProjectTaskEditPage() {
     setError("");
     
     try {
+      // تحضير البيانات لإرسالها
       const taskData = {
-        name: task.name,
-        description: task.description,
+        name: task.name.trim(),
+        description: task.description.trim(),
         status: task.status,
-        start_date: task.start_date,
-        end_date: task.end_date,
-        evaluation_admin: parseFloat(task.evaluation_admin),
-        notes_admin: task.notes_admin,
+        notes_admin: task.notes_admin?.trim() || "",
         project_id: parseInt(projectId),
       };
+
+      // إضافة التقييم إذا كان موجوداً
+      if (task.evaluation_admin) {
+        taskData.evaluation_admin = parseFloat(task.evaluation_admin);
+      }
+
+      // إضافة التواريخ فقط إذا كانت موجودة وغير فارغة
+      if (task.start_date && task.start_date.trim()) {
+        taskData.start_date = task.start_date;
+      }
+      // إذا كان فارغاً لا نرسل الحقل أصلاً (ستحتفظ القيمة الحالية)
+
+      if (task.end_date && task.end_date.trim()) {
+        taskData.end_date = task.end_date;
+      }
+      // إذا كان فارغاً لا نرسل الحقل أصلاً (ستحتفظ القيمة الحالية)
+
+      console.log("Updating task with data:", taskData);
 
       await taskService.updateTask(taskId, taskData);
 
@@ -251,16 +259,48 @@ export default function ProjectTaskEditPage() {
             required
           />
 
-          <DateFields
-            startDate={task.start_date}
-            endDate={task.end_date}
-            onStartDateChange={(e) => handleChange("start_date", e.target.value)}
-            onEndDateChange={(e) => handleChange("end_date", e.target.value)}
-            startDateError={formErrors.start_date}
-            endDateError={formErrors.end_date}
-            t={t}
-            isRTL={isRTL}
-          />
+          {/* التواريخ - اختيارية */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+              {t("dates")} ({t("optional")})
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  {t("startDate")}
+                </label>
+                <input
+                  type="date"
+                  value={task.start_date || ""}
+                  onChange={(e) => handleChange("start_date", e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+                {formErrors.start_date && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.start_date}</p>
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t("startDateOptional")}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  {t("endDate")}
+                </label>
+                <input
+                  type="date"
+                  value={task.end_date || ""}
+                  onChange={(e) => handleChange("end_date", e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+                {formErrors.end_date && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.end_date}</p>
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t("endDateOptional")}
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Dropdown للحالة */}
@@ -332,6 +372,7 @@ export default function ProjectTaskEditPage() {
             rows={3}
             placeholder={t("optionalNotes")}
           />
+
 
           <FormActions
             isRTL={isRTL}

@@ -310,5 +310,16 @@
     "NotImplemented": "غير منفذ",
     "underImplementation": "تحت التنفيذ"
   },
-  "manageProjectUsers": "إدارة مستخدمي المشروع"
+  "manageProjectUsers": "إدارة مستخدمي المشروع",
+  "noTasksInProject": "لا توجد مهام في هذا المشروع بعد. ابدأ بإنشاء مهمة جديدة لإدارة عملك بكفاءة.",
+  "createFirstTask": "أنشئ مهمتك الأولى",
+  "searchTasks": "ابحث عن المهام",
+  "taskName": "اسم المهمة",
+  "enterTaskName": "أدخل اسم المهمة",
+  "enterAdminNotes": "أدخل ملاحظات المسؤول",
+  "craeteTask": "إنشاء مهمة",
+  "updateTask": "تحديث مهمة",
+  "addNewTask": "إضافة مهمة جديدة",
+  "editTaskDetails": "تعديل تفاصيل المهمة الحالية",
+  "timeProgress": "تقدم الوقت"
 }

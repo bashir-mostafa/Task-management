@@ -10,13 +10,7 @@ export default function PageHeader({
   children,
   isRTL = false,
 }) {
-  const x = 6;
 
-  if (x % 2) {
-    console.log("x is odd");
-  } else {
-    console.log("x is even");
-  }
   return (
     <div className=" mb-8">
       <div className={`flex justify-between ml-100 gap-6 ${isRTL ? 'flex-row-reverse' : 'flex-row'} mb-4`}>
