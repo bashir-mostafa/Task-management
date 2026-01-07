@@ -1,16 +1,18 @@
+// SupTaskEditPage.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Save } from "lucide-react";
 import { supTaskService } from "../../services/supTaskService";
 import { taskService } from "../../services/taskService";
+import { userService } from "../../../users/services/userService";
 import PageHeader from "../../../../../components/common/PageHeader";
 import FormContainer from "../../../../../components/common/FormContainer";
 import FormActions from "../../../../../components/common/FormActions";
 import DateFields from "../../../../../components/common/DateFields";
 import Input from "../../../../../components/UI/InputField";
 import TextArea from "../../../../../components/UI/TextAreaField";
-import Select from "../../../../../components/UI/Select";
+import Dropdown from "../../../../../components/UI/Dropdown";
 import Toast from "../../../../../components/Toast";
 import LoadingSpinner from "../../../../../components/UI/LoadingSpinner";
 
@@ -24,14 +26,14 @@ export default function SupTaskEditPage() {
   const [submitting, setSubmitting] = useState(false);
   const [supTask, setSupTask] = useState(null);
   const [task, setTask] = useState(null);
+  const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     start_date: "",
     end_date: "",
     user_id: "",
-    status: 0,
-    completed: false,
+    status: "Notimplemented",
     user_notes: ""
   });
 
@@ -41,6 +43,14 @@ export default function SupTaskEditPage() {
     message: "",
     type: "success",
   });
+
+  // خيارات الحالة
+  const statusOptions = [
+    { value: "Notimplemented", label: t("notImplemented") },
+    { value: "Underimplementation", label: t("underImplementation") },
+    { value: "Complete", label: t("completed") },
+    { value: "Pause", label: t("paused") },
+  ];
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
@@ -58,20 +68,26 @@ export default function SupTaskEditPage() {
     try {
       setLoading(true);
 
+      // جلب بيانات المهمة الرئيسية
       const taskData = await taskService.getTaskById(taskId);
       setTask(taskData);
 
+      // جلب بيانات المهمة الفرعية
       const supTaskData = await supTaskService.getSupTaskById(supTaskId);
       setSupTask(supTaskData);
 
+      // جلب قائمة المستخدمين
+      const usersResponse = await userService.getUsers();
+      setUsers(usersResponse.data || []);
+
+      // تعيين بيانات النموذج
       setFormData({
         name: supTaskData.name || "",
         description: supTaskData.description || "",
         start_date: supTaskData.start_date?.split('T')[0] || "",
         end_date: supTaskData.end_date?.split('T')[0] || "",
-        user_id: supTaskData.user_id || "",
-        status: supTaskData.status || 0,
-        completed: supTaskData.completed || false,
+        user_id: supTaskData.user_id ? supTaskData.user_id.toString() : "",
+        status: supTaskData.status_string || "Notimplemented",
         user_notes: supTaskData.user_notes || ""
       });
 
@@ -83,6 +99,30 @@ export default function SupTaskEditPage() {
       setLoading(false);
     }
   };
+
+  // الحصول على اسم المستخدم المعين
+  const getAssignedUserName = () => {
+    if (!formData.user_id) return "";
+    
+    const user = users.find(u => u.id.toString() === formData.user_id);
+    if (user) {
+      return user.name 
+        ? `${user.name} (${user.email})`
+        : `${user.username} (${user.email})`;
+    }
+    return t("user") + " #" + formData.user_id;
+  };
+
+  // تحضير خيارات المستخدمين
+  const userOptions = [
+    { value: "", label: t("selectUser") },
+    ...users.filter(user => !user.isDeleted).map(user => ({
+      value: user.id.toString(),
+      label: user.name 
+        ? `${user.name} (${user.email}) - ${user.role}`
+        : `${user.username} (${user.email}) - ${user.role}`
+    }))
+  ];
 
   const validateForm = () => {
     const errors = {};
@@ -133,11 +173,11 @@ export default function SupTaskEditPage() {
         start_date: formData.start_date,
         end_date: formData.end_date,
         user_id: formData.user_id ? parseInt(formData.user_id) : 0,
-        completed: formData.completed,
         user_notes: formData.user_notes,
-        status: parseInt(formData.status)
+        status: formData.status
       };
 
+      console.log("📤 Updating sup task data:", supTaskData);
       await supTaskService.updateSupTask(supTaskId, supTaskData);
 
       showToast(t("supTaskUpdatedSuccessfully"), "success");
@@ -158,15 +198,6 @@ export default function SupTaskEditPage() {
       ...prev,
       [field]: value,
     }));
-
-    if (field === 'status') {
-      const statusValue = parseInt(value);
-      setFormData(prev => ({
-        ...prev,
-        completed: statusValue === 2,
-        [field]: statusValue
-      }));
-    }
 
     if (formErrors[field]) {
       setFormErrors((prev) => ({
@@ -214,6 +245,7 @@ export default function SupTaskEditPage() {
       <FormContainer maxWidth="3xl">
         <form onSubmit={handleSubmit}>
           <div className="space-y-6">
+            {/* اسم المهمة الفرعية */}
             <Input
               label={`${t("supTaskName")} *`}
               value={formData.name}
@@ -222,6 +254,7 @@ export default function SupTaskEditPage() {
               required
             />
 
+            {/* الوصف */}
             <TextArea
               label={`${t("description")} *`}
               value={formData.description}
@@ -231,6 +264,7 @@ export default function SupTaskEditPage() {
               required
             />
 
+            {/* التواريخ */}
             <DateFields
               startDate={formData.start_date}
               endDate={formData.end_date}
@@ -243,48 +277,70 @@ export default function SupTaskEditPage() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select
-                label={t("status")}
-                value={formData.status}
-                onChange={(e) => handleChange("status", e.target.value)}
-              >
-                <option value={0}>{t("pending")}</option>
-                <option value={1}>{t("inProgress")}</option>
-                <option value={2}>{t("completed")}</option>
-              </Select>
+              {/* الحالة باستخدام Dropdown */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-text">
+                  {t("status")} *
+                </label>
+                <Dropdown
+                  options={statusOptions}
+                  value={formData.status}
+                  onChange={(value) => handleChange("status", value)}
+                  placeholder={t("selectStatus")}
+                  isRTL={isRTL}
+                />
+                {formErrors.status && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.status}</p>
+                )}
+              </div>
 
-              <Input
-                type="number"
-                label={t("assignedUserId")}
-                value={formData.user_id}
-                onChange={(e) => handleChange("user_id", e.target.value)}
-                min="0"
-                placeholder={t("enterUserId")}
-                helpText={t("userIdHelp")}
-              />
+              {/* تعيين مستخدم باستخدام Dropdown */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-text">
+                  {t("assignedTo")}
+                </label>
+                <div className="mb-2">
+                  {formData.user_id ? (
+                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                      <p className="text-sm text-blue-800 dark:text-blue-300">
+                        <span className="font-medium">{t("currentlyAssigned")}:</span>{" "}
+                        {getAssignedUserName()}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {t("noUserAssigned")}
+                    </p>
+                  )}
+                </div>
+                <Dropdown
+                  options={userOptions}
+                  value={formData.user_id}
+                  onChange={(value) => handleChange("user_id", value)}
+                  placeholder={t("changeUser")}
+                  isRTL={isRTL}
+                  searchable={true}
+                />
+                <p className="text-gray-500 text-sm mt-1">
+                  {formData.user_id ? 
+                    t("changeUserHelp") : 
+                    t("assignUserHelp")
+                  }
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="completed"
-                checked={formData.completed}
-                onChange={(e) => handleChange("completed", e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="completed" className="text-sm text-gray-700 dark:text-gray-300">
-                {t("markAsCompleted")}
-              </label>
-            </div>
-
+            {/* ملاحظات المستخدم */}
             <TextArea
               label={t("userNotes")}
               value={formData.user_notes}
               onChange={(e) => handleChange("user_notes", e.target.value)}
               rows={3}
               placeholder={t("enterUserNotes")}
+              helpText={t("userNotesHelp")}
             />
 
+            {/* أزرار الحفظ والإلغاء */}
             <FormActions
               isRTL={isRTL}
               onSubmit={handleSubmit}
@@ -298,6 +354,7 @@ export default function SupTaskEditPage() {
         </form>
       </FormContainer>
 
+      {/* رسائل التنبيه */}
       {toast.show && (
         <Toast
           message={toast.message}

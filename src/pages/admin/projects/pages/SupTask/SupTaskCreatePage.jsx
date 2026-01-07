@@ -1,3 +1,4 @@
+// SupTaskCreatePage.jsx - استخدام الحالات النصية مباشرة
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -25,14 +26,13 @@ export default function SupTaskCreatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [task, setTask] = useState(null);
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     start_date: "",
     end_date: "",
     user_id: "",
-    status: "pending",
+    status: "Notimplemented", // الحالة النصية الافتراضية
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -42,11 +42,12 @@ export default function SupTaskCreatePage() {
     type: "success",
   });
 
+  // خيارات الحالة كنص - نفس الـ API
   const statusOptions = [
-    { value: "pending", label: t("pending") },
-    { value: "in_progress", label: t("inProgress") },
-    { value: "completed", label: t("completed") },
-    { value: "cancelled", label: t("cancelled") },
+    { value: "Notimplemented", label: t("notImplemented") },
+    { value: "Underimplementation", label: t("underImplementation") },
+    { value: "Complete", label: t("completed") },
+    { value: "Pause", label: t("paused") },
   ];
 
   const showToast = useCallback((message, type = "success") => {
@@ -67,11 +68,6 @@ export default function SupTaskCreatePage() {
         
         const usersResponse = await userService.getUsers();
         setUsers(usersResponse.data || []);
-        
-        const activeUsers = (usersResponse.data || []).filter(
-          user => !user.isDeleted
-        );
-        setFilteredUsers(activeUsers);
         
         if (taskData.start_date && taskData.end_date) {
           setFormData(prev => ({
@@ -95,9 +91,11 @@ export default function SupTaskCreatePage() {
 
   const userOptions = [
     { value: "", label: t("selectUser") },
-    ...filteredUsers.map(user => ({
+    ...users.filter(user => !user.isDeleted).map(user => ({
       value: user.id.toString(),
-      label: `${user.username} (${user.email}) - ${user.role}`
+      label: user.name 
+        ? `${user.name} (${user.email}) - ${user.role}`
+        : `${user.username} (${user.email}) - ${user.role}`
     }))
   ];
 
@@ -129,8 +127,10 @@ export default function SupTaskCreatePage() {
       }
     }
 
-    if (!formData.status) {
-      errors.status = t("statusRequired");
+    // التحقق من الحالة
+    const validStatuses = ["Notimplemented", "Underimplementation", "Complete", "Pause"];
+    if (!formData.status || !validStatuses.includes(formData.status)) {
+      errors.status = t("invalidStatus");
     }
 
     setFormErrors(errors);
@@ -153,11 +153,12 @@ export default function SupTaskCreatePage() {
         description: formData.description.trim(),
         start_date: formData.start_date,
         end_date: formData.end_date,
-        user_id: formData.user_id ? parseInt(formData.user_id) : null,
-        status: formData.status,
+        user_id: formData.user_id ? parseInt(formData.user_id) : 0, // 0 يعني لا يوجد مستخدم
+        status: formData.status, // إرسال الحالة كنص
         taskid: parseInt(taskId),
       };
 
+      console.log("📤 Sending sup task data with string status:", supTaskData);
       await supTaskService.createSupTask(supTaskData);
 
       showToast(t("supTaskCreatedSuccessfully"), "success");
@@ -185,10 +186,6 @@ export default function SupTaskCreatePage() {
         [field]: "",
       }));
     }
-  };
-
-  const handleSelectChange = (field, value) => {
-    handleChange(field, value);
   };
 
   if (loading) {
@@ -268,13 +265,16 @@ export default function SupTaskCreatePage() {
                 <Dropdown
                   options={statusOptions}
                   value={formData.status}
-                  onChange={(value) => handleSelectChange("status", value)}
+                  onChange={(value) => handleChange("status", value)}
                   placeholder={t("selectStatus")}
                   isRTL={isRTL}
                 />
                 {formErrors.status && (
                   <p className="text-red-500 text-sm mt-1">{formErrors.status}</p>
                 )}
+                <p className="text-gray-500 text-sm mt-1">
+                  {t("statusWillBeSentAs")}: <span className="font-mono">{formData.status}</span>
+                </p>
               </div>
 
               {/* حقل المستخدم (Assigned To) باستخدام Dropdown */}
@@ -285,11 +285,17 @@ export default function SupTaskCreatePage() {
                 <Dropdown
                   options={userOptions}
                   value={formData.user_id}
-                  onChange={(value) => handleSelectChange("user_id", value)}
+                  onChange={(value) => handleChange("user_id", value)}
                   placeholder={t("selectUser")}
                   isRTL={isRTL}
+                  searchable={true}
                 />
-                <p className="text-gray-500 text-sm mt-1">{t("userSelectionHelp")}</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  {formData.user_id ? 
+                    `${t("selectedUser")} (ID: ${formData.user_id})` : 
+                    t("userSelectionHelp")
+                  }
+                </p>
               </div>
             </div>
 

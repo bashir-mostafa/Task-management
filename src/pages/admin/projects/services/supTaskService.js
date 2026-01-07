@@ -1,4 +1,4 @@
-// src/services/supTaskService.js
+// src/services/supTaskService.js - تحديث لإرسال الحالات كنص
 import api from "../../../../services/api";
 
 export const supTaskService = {
@@ -32,7 +32,7 @@ export const supTaskService = {
     }
   },
 
-  // إنشاء مهمة فرعية جديدة
+  // إنشاء مهمة فرعية جديدة - إرسال الحالة كنص
   createSupTask: async (supTaskData) => {
     console.log('🔄 Creating sup task with data:', supTaskData);
     
@@ -42,10 +42,11 @@ export const supTaskService = {
       start_date: supTaskData.start_date,
       end_date: supTaskData.end_date,
       taskid: supTaskData.taskid,
-      user_id: supTaskData.user_id || 0
+      user_id: supTaskData.user_id ? parseInt(supTaskData.user_id) : 0,
+      status: supTaskData.status // إرسال الحالة كنص مباشرة
     };
 
-    console.log('📤 Sending request data:', requestData);
+    console.log('📤 Sending request data (with string status):', requestData);
 
     try {
       const response = await api.post('/SupTask', requestData);
@@ -62,7 +63,7 @@ export const supTaskService = {
     }
   },
 
-  // تحديث مهمة فرعية
+  // تحديث مهمة فرعية - إرسال الحالة كنص
   updateSupTask: async (supTaskId, supTaskData) => {
     console.log('🔄 Updating sup task with data:', { supTaskId, supTaskData });
     
@@ -71,12 +72,12 @@ export const supTaskService = {
       description: supTaskData.description,
       start_date: supTaskData.start_date,
       end_date: supTaskData.end_date,
-      user_id: supTaskData.user_id || 0,
-      completed: supTaskData.completed || false,
+      user_id: supTaskData.user_id ? parseInt(supTaskData.user_id) : 0,
+      status: supTaskData.status, // إرسال الحالة كنص مباشرة
       user_notes: supTaskData.user_notes || ""
     };
 
-    console.log('📤 Sending update request data:', requestData);
+    console.log('📤 Sending update request data (with string status):', requestData);
 
     try {
       const response = await api.put(`/SupTask/${supTaskId}`, requestData);
@@ -105,12 +106,11 @@ export const supTaskService = {
     }
   },
 
-  // تحديث حالة المهمة الفرعية
+  // تحديث حالة المهمة الفرعية - إرسال الحالة كنص
   updateSupTaskStatus: async (supTaskId, status) => {
     try {
       const requestData = {
-        completed: status === 2, // 2 تعني completed
-        status: status
+        status: status // إرسال الحالة كنص مباشرة
       };
       const response = await api.put(`/SupTask/${supTaskId}`, requestData);
       return response.data;
