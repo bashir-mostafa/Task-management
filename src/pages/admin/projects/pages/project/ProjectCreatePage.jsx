@@ -21,14 +21,14 @@ export default function ProjectCreatePage() {
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [users, setUsers] = useState([]); 
-  const [loadingUsers, setLoadingUsers] = useState(false); 
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     project_manager_id: "",
-    status: 1, 
+    status: 1,
     start_date: "",
     end_date: "",
     notes: "",
@@ -53,7 +53,6 @@ export default function ProjectCreatePage() {
 
       console.log("Users API Response:", response);
 
-    
       let usersData = [];
 
       if (response && response.data && Array.isArray(response.data)) {
@@ -62,7 +61,9 @@ export default function ProjectCreatePage() {
         usersData = response;
       }
 
-      const activeUsers = usersData.filter((user) => !user.isDeleted && user.role === "Admin");
+      const activeUsers = usersData.filter(
+        (user) => !user.isDeleted && user.role === "Admin"
+      );
 
       const formattedUsers = activeUsers.map((user) => {
         return {
@@ -201,8 +202,7 @@ export default function ProjectCreatePage() {
               error={formErrors.name}
               required
               placeholder={t("enterProjectName")}
-              isRTL = {isRTL}
-
+              isRTL={isRTL}
             />
 
             <TextArea
@@ -226,6 +226,7 @@ export default function ProjectCreatePage() {
                 placeholder={
                   loadingUsers ? t("loadingUsers") : t("selectProjectManager")
                 }
+                error={formErrors.description}
                 loading={loadingUsers}
                 icon={<Users size={16} />}
                 helpText={t("selectManagerHelp")}
@@ -233,7 +234,7 @@ export default function ProjectCreatePage() {
                 noOptionsMessage={() => t("noUsersAvailable")}
                 isSearchable={true}
                 className="w-full"
-
+                required
               />
             </div>
 

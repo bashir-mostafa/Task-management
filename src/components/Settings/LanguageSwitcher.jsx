@@ -1,5 +1,4 @@
 // src/components/Settings/LanguageSwitcher.jsx
-// (لم تغير، لكنه جيد مع تعديل بسيط للـ bottom إذا لزم)
 import React, { useState, useRef, useEffect } from "react";
 import { Languages, ChevronDown, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";

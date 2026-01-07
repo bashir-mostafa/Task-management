@@ -1,5 +1,4 @@
 // src/hooks/useDarkMode.js
-// (لم تغير، لكنه يعمل جيداً)
 import { useEffect, useState } from 'react';
 
 const AVAILABLE_THEMES = ['blue', 'green', 'purple', 'orange', 'pink'];
@@ -28,23 +27,23 @@ export default function useDarkMode() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    
     const root = window.document.documentElement;
     
     try {
+      // إزالة جميع كلاسات الألوان القديمة
       AVAILABLE_THEMES.forEach(theme => {
         root.classList.remove(`theme-${theme}`);
       });
       
+      // إضافة الكلاس الجديد للون
       root.classList.add(`theme-${colorTheme}`);
       
+      // تطبيق الوضع الداكن أو الفاتح
       root.classList.remove('dark', 'light');
-      
-      if (isDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.add('light');
-      }
+      root.classList.add(isDark ? 'dark' : 'light');
 
+      // حفظ التفضيلات
       localStorage.setItem('darkMode', isDark);
       localStorage.setItem('colorTheme', colorTheme);
     } catch (error) {
@@ -55,27 +54,23 @@ export default function useDarkMode() {
   const changeColorTheme = (theme) => {
     if (AVAILABLE_THEMES.includes(theme)) {
       setColorTheme(theme);
-      localStorage.setItem('colorTheme', theme);
-      // أعد تحميل الصفحة بعد تغيير اللون لتطبيق الثيم بشكل كامل
-      setTimeout(() => {
-        window.location.reload();
-      }, 150);
+      // تم حذف حفظ localStorage هنا لأن useEffect سيتكفل بذلك
     } else {
       console.warn(`Invalid theme: ${theme}. Using default theme.`);
       setColorTheme(DEFAULT_THEME);
-      localStorage.setItem('colorTheme', DEFAULT_THEME);
-      setTimeout(() => {
-        window.location.reload();
-      }, 150);
     }
   };
-  
+
+  const toggleDarkMode = () => {
+    setIsDark(prev => !prev);
+  };
 
   return {
     isDark,
     setIsDark,
     colorTheme,
     changeColorTheme,
-    toggleDarkMode: () => setIsDark(!isDark)
-  }; 
+    toggleDarkMode,
+    availableThemes: AVAILABLE_THEMES
+  };
 }
