@@ -359,5 +359,15 @@
   "adminNotes": "ملاحظات المسؤول",
   "taskNameRequired": "اسم المهمة مطلوب",
   "taskDescriptionRequired": "وصف المهمة مطلوب",
-  "backToTasks": "العودة إلى المهام"
+  "backToTasks": "العودة إلى المهام",
+  "subTasksOverview": "نظرة عامة على المهام الفرعية",
+  "noSubTasksFound": "لم يتم العثور على مهام فرعية",
+  "viewSubTasksList": "عرض المهمة الفرعية",
+  "addSubTask": "إضافة مهمة فرعية",
+  "quickActions": "إجراءات سريعة",
+  "taskInformation": "معلومات المهمة",
+  "taskStatistics": "إحصائيات المهمة",
+  "totalSubTasks": "إجمالي المهام الفرعية",
+  "completedSubTasks": "المهام الفرعية المكتملة",
+  "recentSubTasks": "المهام الفرعية الأخيرة"
 }
