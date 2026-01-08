@@ -17,12 +17,14 @@ export default function ProjectTaskEditPage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   
+  // تحديث: إضافة success_rate فقط
   const [task, setTask] = useState({
     name: "",
     description: "",
     status: "Notimplemented",
     start_date: "",
     end_date: "",
+    success_rate: 0, // إضافة حقل success_rate
     evaluation_admin: 0,
     notes_admin: ""
   });
@@ -72,6 +74,7 @@ export default function ProjectTaskEditPage() {
           status: response.status || "Notimplemented",
           start_date: response.start_date?.split('T')[0] || "",
           end_date: response.end_date?.split('T')[0] || "",
+          success_rate: response.success_rate || 0, // جلب success_rate
           evaluation_admin: response.evaluation_admin || 0,
           notes_admin: response.notes_admin || ""
         });
@@ -100,6 +103,11 @@ export default function ProjectTaskEditPage() {
       errors.description = t("taskDescriptionRequired");
     }
 
+    // التحقق من success_rate أن تكون بين 0 و 100
+    if (task.success_rate < 0 || task.success_rate > 100) {
+      errors.success_rate = t("successRateRange");
+    }
+
     // التحقق فقط إذا كان كلا التاريخين موجودين
     if (task.start_date && task.end_date) {
       const startDate = new Date(task.start_date);
@@ -126,11 +134,12 @@ export default function ProjectTaskEditPage() {
     setError("");
     
     try {
-      // تحضير البيانات لإرسالها
+      // تحديث: إرسال success_rate فقط مع القيم الافتراضية للحقول الأخرى
       const taskData = {
         name: task.name.trim(),
         description: task.description.trim(),
         status: task.status,
+        success_rate: parseFloat(task.success_rate) || 0, // إضافة success_rate
         notes_admin: task.notes_admin?.trim() || "",
         project_id: parseInt(projectId),
       };
@@ -144,12 +153,10 @@ export default function ProjectTaskEditPage() {
       if (task.start_date && task.start_date.trim()) {
         taskData.start_date = task.start_date;
       }
-      // إذا كان فارغاً لا نرسل الحقل أصلاً (ستحتفظ القيمة الحالية)
 
       if (task.end_date && task.end_date.trim()) {
         taskData.end_date = task.end_date;
       }
-      // إذا كان فارغاً لا نرسل الحقل أصلاً (ستحتفظ القيمة الحالية)
 
       console.log("Updating task with data:", taskData);
 
@@ -258,6 +265,76 @@ export default function ProjectTaskEditPage() {
             rows={4}
             required
           />
+
+          {/* إضافة حقل معدل النجاح */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t("successRate")} (%)
+              </label>
+              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                {task.success_rate}%
+              </span>
+            </div>
+            
+            {/* شريط التقدم لـ success_rate */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 dark:text-gray-400">0%</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">50%</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">100%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={task.success_rate}
+                onChange={(e) => handleChange("success_rate", e.target.value)}
+                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+
+            {/* أدوات ضبط سريعة */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {[0, 25, 50, 75, 100].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => handleChange("success_rate", value)}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    parseFloat(task.success_rate) === value
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {value}%
+                </button>
+              ))}
+            </div>
+
+            {/* حقل إدخال رقمي */}
+            <div className="mt-3">
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={task.success_rate}
+                  onChange={(e) => handleChange("success_rate", e.target.value)}
+                  className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+                <span className="text-gray-600 dark:text-gray-400">%</span>
+              </div>
+              {formErrors.success_rate && (
+                <p className="text-red-500 text-sm mt-1">{formErrors.success_rate}</p>
+              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {t("enterSuccessRate")} (0-100)
+              </p>
+            </div>
+          </div>
 
           {/* التواريخ - اختيارية */}
           <div className="space-y-4">
@@ -372,7 +449,6 @@ export default function ProjectTaskEditPage() {
             rows={3}
             placeholder={t("optionalNotes")}
           />
-
 
           <FormActions
             isRTL={isRTL}
