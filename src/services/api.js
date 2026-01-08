@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://192.168.2.142:5000/api";
+const API_BASE = "http://localhost:5000/api";
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -9,6 +9,7 @@ const api = axios.create({
     Authorization: `Bearer ${localStorage.getItem("access")}`,
   },
 });
+ 
 //  يمكن تفعيل هذا الخيار إذا كان الخادم يدعم ملفات تعريف الارتباط
 // api.defaults.withCredentials = true;
 
