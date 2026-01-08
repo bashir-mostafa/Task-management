@@ -134,7 +134,10 @@ export const taskService = {
     });
     return response.data.statusCount || [];
   },
-
+getTaskUser: async ()=>{
+  const response = await api.get('/TaskUser');
+    return response.data;
+  },
   // Helper function to convert status string to number (for form)
   getStatusNumber: (statusText) => {
     const statusMap = {

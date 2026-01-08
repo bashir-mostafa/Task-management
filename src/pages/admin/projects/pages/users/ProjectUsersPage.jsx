@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,10 +11,11 @@ import {
   Shield,
   User as UserIcon,
   UserCheck,
+  Loader2,
 } from "lucide-react";
 import { userProjectService } from "../../services/userProjectService";
 import { projectService } from "../../services/projectService";
-import { userService } from "../../../users/services/userService"; // إضافة خدمة المستخدمين
+import { userService } from "../../../users/services/userService";
 import DetailsLayout from "../../../../../components/Layout/DetailsLayout";
 import DetailsCard from "../../../../../components/UI/DetailsCard";
 import StatCard from "../../../../../components/UI/StatCard";
@@ -29,8 +30,9 @@ export default function ProjectUsersPage() {
   const { t, i18n } = useTranslation();
 
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [project, setProject] = useState(null);
-  const [allUsers, setAllUsers] = useState([]); // جميع المستخدمين
+  const [allUsers, setAllUsers] = useState([]);
   const [currentProjectUsers, setCurrentProjectUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +45,26 @@ export default function ProjectUsersPage() {
     type: "success",
   });
 
+  // متغيرات للـ Infinite Scroll
+  const [pageNumber, setPageNumber] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimeoutRef = useRef(null);
+  const observerRef = useRef();
+  const lastUserElementRef = useCallback(
+    (node) => {
+      if (loadingMore) return;
+      if (observerRef.current) observerRef.current.disconnect();
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore && !searchLoading) {
+          loadMoreUsers();
+        }
+      });
+      if (node) observerRef.current.observe(node);
+    },
+    [loadingMore, hasMore, searchLoading]
+  );
+
   const isRTL = i18n.language === "ar";
 
   const showToast = useCallback((message, type = "success") => {
@@ -53,6 +75,30 @@ export default function ProjectUsersPage() {
     setToast((prev) => ({ ...prev, show: false }));
   }, []);
 
+  // دالة لتحويل الرمز إلى نص الدور
+  const getRoleText = useCallback(
+    (roleCode) => {
+      if (roleCode === 1 || roleCode === "1" || roleCode === "Admin") {
+        return t("admin");
+      } else if (roleCode === 2 || roleCode === "2" || roleCode === "User") {
+        return t("user");
+      }
+      return t("unknownRole");
+    },
+    [t]
+  );
+
+  // دالة لتحويل الرمز إلى اسم الدور (للتصنيف)
+  const getRoleName = (roleCode) => {
+    if (roleCode === 1 || roleCode === "1") {
+      return "Admin";
+    } else if (roleCode === 2 || roleCode === "2") {
+      return "User";
+    }
+    return "Unknown";
+  };
+
+  // جلب البيانات الأولية
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -64,20 +110,20 @@ export default function ProjectUsersPage() {
           setProject(projectResult.project);
         }
 
-        // جلب جميع المستخدمين
-        const usersResponse = await userService.getUsers();
-        const allUsersList = usersResponse.data || [];
-
-        // تصفية المستخدمين غير المحذوفين فقط
-        const activeUsers = allUsersList.filter((user) => !user.isDeleted);
-        setAllUsers(activeUsers);
+        // جلب المستخدمين بالـ Infinite Scroll
+        await loadUsers(1, true);
 
         // جلب مستخدمي المشروع
         try {
           const projectUsersResponse = await userProjectService.getProjectUsers(
             projectId
           );
-          setCurrentProjectUsers(projectUsersResponse?.data || []);
+          const projectUsers = projectUsersResponse?.data || [];
+          const projectUsersWithRoleText = projectUsers.map((user) => ({
+            ...user,
+            roleText: getRoleText(user.role),
+          }));
+          setCurrentProjectUsers(projectUsersWithRoleText);
         } catch (err) {
           console.warn("Could not fetch project users:", err);
           setCurrentProjectUsers([]);
@@ -93,15 +139,108 @@ export default function ProjectUsersPage() {
     if (projectId) {
       fetchData();
     }
-  }, [projectId, t, showToast]);
+  }, [projectId, t, showToast, getRoleText]);
+
+  // جلب المستخدمين
+  const loadUsers = async (page = 1, reset = false) => {
+    try {
+      if (reset) {
+        setSearchLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const params = {
+        PageNumber: page,
+        PageSize: 2000000,
+      };
+
+      if (searchTerm) {
+        if (searchTerm.includes("@")) {
+          params.email = searchTerm;
+        } else {
+          params.username = searchTerm;
+        }
+      }
+
+      const usersResponse = await userService.getUsers(params);
+      const usersData = usersResponse.data || [];
+
+      // تصفية المستخدمين غير المحذوفين فقط
+      const activeUsers = usersData.filter((user) => !user.isDeleted);
+      const usersWithRoleText = activeUsers.map((user) => ({
+        ...user,
+        roleText: getRoleText(user.role),
+      }));
+
+      if (reset) {
+        setAllUsers(usersWithRoleText);
+        setPageNumber(1);
+      } else {
+        setAllUsers((prev) => [...prev, ...usersWithRoleText]);
+      }
+
+      // التحقق إذا كان هناك المزيد من البيانات
+      const totalUsers = usersResponse.totalCount || usersResponse.total || 0;
+      const loadedUsers = reset
+        ? usersWithRoleText.length
+        : allUsers.length + usersWithRoleText.length;
+      setHasMore(loadedUsers < totalUsers);
+
+      if (reset) {
+        setPageNumber(1);
+      } else {
+        setPageNumber(page + 1);
+      }
+    } catch (error) {
+      console.error("Error loading users:", error);
+      showToast(t("loadUsersError"), "error");
+    } finally {
+      if (reset) {
+        setSearchLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
+    }
+  };
+
+  // جلب المزيد من المستخدمين
+  const loadMoreUsers = async () => {
+    if (hasMore && !loadingMore && !searchLoading) {
+      await loadUsers(pageNumber + 1, false);
+    }
+  };
+
+  // البحث مع debounce
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      loadUsers(1, true);
+    }, 500);
+  };
 
   // إحصائيات
   const statistics = {
     totalUsers: currentProjectUsers.length,
     available: allUsers.length - currentProjectUsers.length,
     selected: selectedUsers.length,
-    admins: currentProjectUsers.filter((user) => user.role === 1).length,
-    regularUsers: currentProjectUsers.filter((user) => user.role === 2).length,
+    admins: currentProjectUsers.filter(
+      (user) =>
+        user.role === 1 ||
+        user.role === "1" ||
+        getRoleName(user.role) === "Admin"
+    ).length,
+    regularUsers: currentProjectUsers.filter(
+      (user) =>
+        user.role === 2 ||
+        user.role === "2" ||
+        getRoleName(user.role) === "User"
+    ).length,
   };
 
   // إزالة مستخدم من المشروع
@@ -143,11 +282,16 @@ export default function ProjectUsersPage() {
       // إضافة المستخدمين للمشروع
       await userProjectService.addUsersToProject(projectId, usersToAdd);
 
-      // إعادة جلب مستخدمي المشروع
-      const projectUsersResponse = await userProjectService.getProjectUsers(
-        projectId
+      // جلب تفاصيل المستخدمين المضافين
+      const addedUsers = allUsers.filter((user) =>
+        usersToAdd.includes(user.id)
       );
-      setCurrentProjectUsers(projectUsersResponse?.data || []);
+      const addedUsersWithRoleText = addedUsers.map((user) => ({
+        ...user,
+        roleText: getRoleText(user.role),
+      }));
+
+      setCurrentProjectUsers((prev) => [...prev, ...addedUsersWithRoleText]);
 
       // إعادة تعيين البيانات
       setSelectedUsers([]);
@@ -158,6 +302,38 @@ export default function ProjectUsersPage() {
     } catch (error) {
       console.error("Error adding users to project:", error);
       showToast(t("addUsersError"), "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // إزالة مستخدمين محددين من المشروع
+  const handleRemoveSelectedUsers = async () => {
+    const usersToRemove = selectedUsers.filter((id) =>
+      currentProjectUsers.some((u) => u.id === id)
+    );
+
+    if (usersToRemove.length === 0) {
+      showToast(t("selectUsersToRemove"), "warning");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await userProjectService.removeUsersFromProject(projectId, usersToRemove);
+
+      // تحديث القائمة محلياً
+      setCurrentProjectUsers((prev) =>
+        prev.filter((user) => !usersToRemove.includes(user.id))
+      );
+      setSelectedUsers([]);
+      setDeleteModalOpen(false);
+      setUserToRemove(null);
+
+      showToast(t("usersRemovedSuccessfully"), "success");
+    } catch (error) {
+      console.error("Error removing users from project:", error);
+      showToast(t("removeUsersError"), "error");
     } finally {
       setLoading(false);
     }
@@ -205,12 +381,10 @@ export default function ProjectUsersPage() {
       selectedUsers.filter((id) => allAvailableIds.includes(id)).length ===
       allAvailableIds.length
     ) {
-      // إلغاء تحديد الكل
       setSelectedUsers((prev) =>
         prev.filter((id) => !allAvailableIds.includes(id))
       );
     } else {
-      // تحديد الكل
       setSelectedUsers((prev) => [...new Set([...prev, ...allAvailableIds])]);
     }
   };
@@ -222,12 +396,10 @@ export default function ProjectUsersPage() {
       selectedUsers.filter((id) => allAssignedIds.includes(id)).length ===
       allAssignedIds.length
     ) {
-      // إلغاء تحديد الكل
       setSelectedUsers((prev) =>
         prev.filter((id) => !allAssignedIds.includes(id))
       );
     } else {
-      // تحديد الكل
       setSelectedUsers((prev) => [...new Set([...prev, ...allAssignedIds])]);
     }
   };
@@ -235,6 +407,15 @@ export default function ProjectUsersPage() {
   // مسح التحديد
   const clearSelection = () => {
     setSelectedUsers([]);
+  };
+
+  // إعادة تعيين البحث والبيانات عند فتح المودال
+  const handleOpenAddModal = () => {
+    setAddUsersModalOpen(true);
+    setSearchTerm("");
+    setSelectedUsers([]);
+    // إعادة تعيين البيانات عند فتح المودال
+    loadUsers(1, true);
   };
 
   return (
@@ -249,7 +430,7 @@ export default function ProjectUsersPage() {
       showHeader={true}
       actions={
         <Button
-          onClick={() => setAddUsersModalOpen(true)}
+          onClick={handleOpenAddModal}
           className={`flex items-center gap-2 !w-auto px-4 py-2 ${
             isRTL ? "flex-row-reverse" : ""
           }`}>
@@ -333,11 +514,13 @@ export default function ProjectUsersPage() {
                         </p>
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
-                            user.role === 1
+                            user.role === 1 ||
+                            user.role === "1" ||
+                            getRoleName(user.role) === "Admin"
                               ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
                               : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                           }`}>
-                          {user.role === 1 ? t("admin") : t("user")}
+                          {user.roleText || getRoleText(user.role)}
                         </span>
                       </div>
                     </div>
@@ -407,9 +590,21 @@ export default function ProjectUsersPage() {
                     </div>
                     <div>
                       <p className="font-medium text-text">{user.username}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
-                        {user.email}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[120px]">
+                          {user.email}
+                        </p>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            user.role === 1 ||
+                            user.role === "1" ||
+                            getRoleName(user.role) === "Admin"
+                              ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+                              : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                          }`}>
+                          {user.roleText || getRoleText(user.role)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <input
@@ -459,6 +654,7 @@ export default function ProjectUsersPage() {
               const isAssigned = currentProjectUsers.some(
                 (u) => u.id === user.id
               );
+              const roleName = getRoleName(user.role);
               return (
                 <div
                   key={user.id}
@@ -467,7 +663,17 @@ export default function ProjectUsersPage() {
                       ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700"
                       : "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700"
                   }`}>
-                  <span className="text-sm">{user.username}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{user.username}</span>
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded ${
+                        roleName === "Admin"
+                          ? "bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200"
+                          : "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200"
+                      }`}>
+                      {user.roleText || getRoleText(user.role)}
+                    </span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleUserSelect(user.id)}
@@ -507,8 +713,9 @@ export default function ProjectUsersPage() {
                   currentProjectUsers.some((u) => u.id === id)
                 );
                 if (usersToRemove.length > 0) {
-                  setUserToRemove({ id: usersToRemove[0] });
-                  setDeleteModalOpen(true);
+                  handleRemoveSelectedUsers();
+                } else {
+                  showToast(t("selectUsersToRemove"), "warning");
                 }
               }}
               variant="danger"
@@ -522,7 +729,7 @@ export default function ProjectUsersPage() {
               {loading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               ) : (
-                <X size={16} />
+                <UserMinus size={16} />
               )}
               <span>{t("removeSelected")}</span>
             </Button>
@@ -530,7 +737,7 @@ export default function ProjectUsersPage() {
         </div>
       )}
 
-      {/* Modal إضافة مستخدمين */}
+      {/* Modal إضافة مستخدمين مع Infinite Scroll */}
       <Modal
         isOpen={addUsersModalOpen}
         onClose={() => {
@@ -553,11 +760,19 @@ export default function ProjectUsersPage() {
               type="text"
               placeholder={t("searchUsers")}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className={`w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white ${
                 isRTL ? "pr-10 pl-4" : ""
               }`}
             />
+            {searchLoading && (
+              <div
+                className={`absolute top-1/2 transform -translate-y-1/2 ${
+                  isRTL ? "left-3" : "right-3"
+                }`}>
+                <Loader2 size={20} className="animate-spin text-gray-400" />
+              </div>
+            )}
           </div>
 
           {/* المستخدمون المحددون */}
@@ -571,7 +786,17 @@ export default function ProjectUsersPage() {
                   <div
                     key={user.id}
                     className="flex items-center gap-2 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-3 py-2 rounded-full">
-                    <span>{user.username}</span>
+                    <div className="flex items-center gap-2">
+                      <span>{user.username}</span>
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded ${
+                          getRoleName(user.role) === "Admin"
+                            ? "bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200"
+                            : "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200"
+                        }`}>
+                        {user.roleText || getRoleText(user.role)}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeSelectedUser(user.id)}
@@ -584,42 +809,106 @@ export default function ProjectUsersPage() {
             </div>
           )}
 
-          {/* قائمة المستخدمين المتاحين */}
+          {/* قائمة المستخدمين المتاحين مع Infinite Scroll */}
           <div className="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg">
             {filteredAvailableUsers.length > 0 ? (
-              filteredAvailableUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className={`flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-600 last:border-b-0 cursor-pointer transition-colors ${
-                    selectedUsers.includes(user.id)
-                      ? "bg-blue-50 dark:bg-blue-900/20"
-                      : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
-                  onClick={() => handleUserSelect(user.id)}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                      {user.username?.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-medium">{user.username}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
+              <>
+                {filteredAvailableUsers.map((user, index) => {
+                  // تحديد العنصر الأخير لربطه بالـ observer
+                  if (index === filteredAvailableUsers.length - 1) {
+                    return (
+                      <div
+                        key={user.id}
+                        ref={lastUserElementRef}
+                        className={`flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-600 last:border-b-0 cursor-pointer transition-colors ${
+                          selectedUsers.includes(user.id)
+                            ? "bg-blue-50 dark:bg-blue-900/20"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                        }`}
+                        onClick={() => handleUserSelect(user.id)}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                            {user.username?.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium">{user.username}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {user.email}
+                              </p>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full ${
+                                  getRoleName(user.role) === "Admin"
+                                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+                                    : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                }`}>
+                                {user.roleText || getRoleText(user.role)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                  <input
-                    type="checkbox"
-                    checked={selectedUsers.includes(user.id)}
-                    onChange={() => handleUserSelect(user.id)}
-                    className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
-                  />
-                </div>
-              ))
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          onChange={() => handleUserSelect(user.id)}
+                          className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
+                        />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div
+                      key={user.id}
+                      className={`flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-600 last:border-b-0 cursor-pointer transition-colors ${
+                        selectedUsers.includes(user.id)
+                          ? "bg-blue-50 dark:bg-blue-900/20"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                      onClick={() => handleUserSelect(user.id)}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                          {user.username?.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium">{user.username}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {user.email}
+                            </p>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${
+                                getRoleName(user.role) === "Admin"
+                                  ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+                                  : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                              }`}>
+                              {user.roleText || getRoleText(user.role)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={() => handleUserSelect(user.id)}
+                        className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
+                      />
+                    </div>
+                  );
+                })}
+
+                {/* مؤشر التحميل */}
+                {loadingMore && (
+                  <div className="flex justify-center p-4">
+                    <Loader2 size={24} className="animate-spin text-primary" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <UserPlus size={32} className="mx-auto mb-2 opacity-50" />
-                <p>{t("noUsersFound")}</p>
+                <p>{searchTerm ? t("noUsersFound") : t("allUsersAssigned")}</p>
               </div>
             )}
           </div>

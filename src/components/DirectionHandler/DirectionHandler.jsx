@@ -30,11 +30,7 @@ export default function DirectionHandler() {
         root.classList.remove('dark', 'light');
         root.classList.add(isDark ? 'dark' : 'light');
         
-        console.log('🎨 Theme applied by DirectionHandler:', { 
-          theme: colorTheme, 
-          darkMode: isDark,
-          fromStorage: { savedDarkMode, savedColorTheme }
-        });
+        
         
         return { isDark, colorTheme };
       } catch (error) {
@@ -53,7 +49,6 @@ export default function DirectionHandler() {
       document.documentElement.classList.toggle('rtl', dir === 'rtl');
       document.documentElement.classList.toggle('ltr', dir === 'ltr');
       
-      console.log('🌍 Direction updated:', { dir, lang });
     };
 
     applyTheme();
@@ -66,7 +61,6 @@ export default function DirectionHandler() {
       document.body.style.backgroundColor = '';
       
       document.body.classList.add('theme-loaded');
-      console.log('✅ Theme and direction fully loaded');
     }, 50);
 
     i18n.on('languageChanged', updateDirection);

@@ -259,7 +259,7 @@ export default function ProjectUsersManagementPage() {
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700">
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {currentProjectUsers.filter(user => user.role === 1).length}
+              {currentProjectUsers.filter(user => user.role === "Admin").length}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
               {t("admins")}
@@ -267,7 +267,7 @@ export default function ProjectUsersManagementPage() {
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700">
             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-              {currentProjectUsers.filter(user => user.role === 2).length}
+              {currentProjectUsers.filter(user => user.role === "User").length}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
               {t("regularUsers")}
@@ -302,11 +302,11 @@ export default function ProjectUsersManagementPage() {
                       <p className="font-medium text-lg">{user.username}</p>
                       <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
                       <span className={`text-xs px-2 py-1 rounded-full mt-1 inline-block ${
-                        user.role === 1 
+                        user.role === "Admin" 
                           ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
                           : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                       }`}>
-                        {user.role === 1 ? t("admin") : t("user")}
+                        {user.role === "Admin" ? t("admin") : t("user")}
                       </span>
                     </div>
                   </div>

@@ -9,12 +9,12 @@ export default function CustomDropdown({
   placeholder,
   isRTL = false,
   className = "",
-  size = "small"
+  size = "small",
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const selectedOption = options.find(option => option.value === value);
+  const selectedOption = options.find((option) => option.value === value);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,34 +31,33 @@ export default function CustomDropdown({
   const sizeClasses = {
     small: "py-1.5 px-3 text-sm",
     medium: "py-2 px-3 text-base",
-    large: "py-3 px-4 text-lg"
+    large: "py-3 px-4 text-lg",
   };
 
   const iconSizes = {
     small: 16,
     medium: 18,
-    large: 20
+    large: 20,
   };
 
   return (
-    <div 
-      className={`relative ${className}`} 
-      ref={dropdownRef}
-      
-    >
+    <div className={`relative ${className}`} ref={dropdownRef}>
       {/* الزر الرئيسي */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 ${
           sizeClasses[size]
-        } ${isOpen ? "border-[rgb(var(--color-primary))] ring-2 ring-[rgba(var(--color-primary),0.2)]" : ""}`}
-      >
+        } ${
+          isOpen
+            ? "border-[rgb(var(--color-primary))] ring-2 ring-[rgba(var(--color-primary),0.2)]"
+            : ""
+        }`}>
         <span className="truncate">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown 
-          size={iconSizes[size]} 
+        <ChevronDown
+          size={iconSizes[size]}
           className={`text-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
           }`}
@@ -80,8 +79,7 @@ export default function CustomDropdown({
                 option.value === value
                   ? "bg-[rgb(var(--color-primary))] text-white"
                   : "text-gray-900 dark:text-white"
-              } ${isRTL ? "text-right" : "text-left"}`}
-            >
+              } ${isRTL ? "text-right" : "text-left"}`}>
               {option.label}
             </button>
           ))}

@@ -28,7 +28,8 @@ export default function Sidebar({ isOpen, toggleSidebar, isRTL }) {
   const menuItems = {
     User: [
       { to: "/home", label: t("home"), icon: <Home size={20} /> },
-      { to: "/tasks", label: t("tasks"), icon: <ListTodo size={20} /> },
+      { to: "/home/tasks", label: t("tasks"), icon: <ListTodo size={20} /> },
+      {to: "/home/projects", label: t("projects"), icon: <Folder size={20} />},
       {
         to: "/home/settings",
         label: t("settings"),

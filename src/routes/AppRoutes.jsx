@@ -1,3 +1,4 @@
+// src/AppRoutes.jsx
 import React, { Suspense } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
@@ -24,13 +25,14 @@ export default function AppRoutes() {
         </div>
       }>
       <Routes>
+        {/* المسار الرئيسي - إعادة التوجيه */}
         <Route
           path="/"
           element={
             <Navigate
               to={
                 state.access
-                  ? state.role === "Admin"
+                  ? (state.role === 1 || state.role === "1" || state.role === "Admin")
                     ? "/dashboard"
                     : "/home"
                   : "/auth/login"
@@ -40,18 +42,23 @@ export default function AppRoutes() {
           }
         />
 
+        {/* مسارات المصادقة - فقط للغير مسجلين */}
         <Route
           path="/auth"
           element={!state.access ? <Outlet /> : <Navigate to="/" replace />}>
           <Route path="login" element={<Lazy.LoginPage />} />
+          <Route path="register" element={<Lazy.RegisterPage />} />
         </Route>
 
+        {/* مسارات محمية بشرط تسجيل الدخول */}
         <Route
           element={
             <ProtectedRoute>
               <Layout />
             </ProtectedRoute>
           }>
+          
+          {/* مسارات المستخدم العادي - فقط للمستخدمين غير الإدمن */}
           <Route
             path="/home/*"
             element={
@@ -61,6 +68,7 @@ export default function AppRoutes() {
             }
           />
 
+          {/* مسارات الإدمن - فقط للمستخدمين الإدمن */}
           <Route
             path="/*"
             element={
@@ -70,8 +78,12 @@ export default function AppRoutes() {
             }
           />
         </Route>
+
+        {/* صفحة غير مصرح بالوصول */}
         <Route path="/unauthorized" element={<Lazy.Unauthorized />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/* صفحة 404 */}
+        <Route path="*" element={<Lazy.NotFoundPage />} />
       </Routes>
     </Suspense>
   );

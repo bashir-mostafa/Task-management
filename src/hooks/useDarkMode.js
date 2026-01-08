@@ -39,7 +39,6 @@ export default function useDarkMode() {
 
   // تهيئة المود مرة واحدة عند التحميل
   useEffect(() => {
-    console.log('🎨 Initializing theme from localStorage...');
     
     try {
       // قراءة darkMode - استخدام القيمة المباشرة من localStorage
@@ -59,10 +58,7 @@ export default function useDarkMode() {
       setIsDark(initialDarkMode);
       setColorTheme(initialColorTheme);
       
-      console.log('✅ Theme applied immediately:', {
-        theme: initialColorTheme,
-        darkMode: initialDarkMode
-      });
+     
       
     } catch (error) {
       console.warn('Error reading from localStorage:', error);
@@ -85,7 +81,6 @@ export default function useDarkMode() {
   useEffect(() => {
     if (!isReady) return;
     
-    console.log('🎨 Applying theme on change:', { isDark, colorTheme });
     
     applyTheme(colorTheme, isDark);
     
@@ -93,9 +88,7 @@ export default function useDarkMode() {
     try {
       localStorage.setItem('darkMode', isDark);
       localStorage.setItem('colorTheme', colorTheme);
-      console.log('💾 Saved to localStorage:', { darkMode: isDark, colorTheme });
     } catch (error) {
-      console.warn('Error saving to localStorage:', error);
     }
   }, [isDark, colorTheme, isReady, applyTheme]);
 
