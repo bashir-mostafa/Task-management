@@ -1,60 +1,108 @@
 // src/hooks/useDarkMode.js
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 const AVAILABLE_THEMES = ['blue', 'green', 'purple', 'orange', 'pink'];
-const DEFAULT_THEME = 'blue';
+const DEFAULT_THEME = 'purple';
 
 export default function useDarkMode() {
-  const [isDark, setIsDark] = useState(() => {
-    try {
-      const saved = localStorage.getItem('darkMode');
-      return saved === 'true';
-    } catch (error) {
-      console.warn('Error accessing localStorage for darkMode:', error);
-      return false;
-    }
-  });
+  const [isDark, setIsDark] = useState(false);
+  const [colorTheme, setColorTheme] = useState(DEFAULT_THEME);
+  const [isReady, setIsReady] = useState(false);
 
-  const [colorTheme, setColorTheme] = useState(() => {
-    try {
-      const saved = localStorage.getItem('colorTheme');
-      return AVAILABLE_THEMES.includes(saved) ? saved : DEFAULT_THEME;
-    } catch (error) {
-      console.warn('Error accessing localStorage for colorTheme:', error);
-      return DEFAULT_THEME;
-    }
-  });
-
-  useEffect(() => {
+  // دالة لتطبيق المود فوراً
+  const applyTheme = useCallback((theme, darkMode) => {
     if (typeof window === 'undefined') return;
-    
+
     const root = window.document.documentElement;
     
+    // إزالة جميع كلاسات الألوان القديمة
+    AVAILABLE_THEMES.forEach(t => {
+      root.classList.remove(`theme-${t}`);
+    });
+    
+    // إضافة الكلاس الجديد للون
+    root.classList.add(`theme-${theme}`);
+    
+    // تطبيق الوضع الداكن أو الفاتح
+    root.classList.remove('dark', 'light');
+    root.classList.add(darkMode ? 'dark' : 'light');
+    
+    // تطبيق مباشر على الـ body لمنع الوميض (flash)
+    if (darkMode) {
+      root.style.backgroundColor = '#111827'; // gray-900
+      root.style.color = '#f9fafb'; // gray-50
+    } else {
+      root.style.backgroundColor = '#ffffff';
+      root.style.color = '#111827'; // gray-900
+    }
+  }, []);
+
+  // تهيئة المود مرة واحدة عند التحميل
+  useEffect(() => {
+    console.log('🎨 Initializing theme from localStorage...');
+    
     try {
-      // إزالة جميع كلاسات الألوان القديمة
-      AVAILABLE_THEMES.forEach(theme => {
-        root.classList.remove(`theme-${theme}`);
+      // قراءة darkMode - استخدام القيمة المباشرة من localStorage
+      const savedDarkMode = localStorage.getItem('darkMode');
+      const initialDarkMode = savedDarkMode === 'true';
+      
+      // قراءة colorTheme
+      const savedColorTheme = localStorage.getItem('colorTheme');
+      const initialColorTheme = savedColorTheme && AVAILABLE_THEMES.includes(savedColorTheme) 
+        ? savedColorTheme 
+        : DEFAULT_THEME;
+      
+      // تطبيق المود فوراً قبل تحديث state
+      applyTheme(initialColorTheme, initialDarkMode);
+      
+      // تحديث state بعد التطبيق
+      setIsDark(initialDarkMode);
+      setColorTheme(initialColorTheme);
+      
+      console.log('✅ Theme applied immediately:', {
+        theme: initialColorTheme,
+        darkMode: initialDarkMode
       });
       
-      // إضافة الكلاس الجديد للون
-      root.classList.add(`theme-${colorTheme}`);
-      
-      // تطبيق الوضع الداكن أو الفاتح
-      root.classList.remove('dark', 'light');
-      root.classList.add(isDark ? 'dark' : 'light');
+    } catch (error) {
+      console.warn('Error reading from localStorage:', error);
+      // تطبيق المود الافتراضي في حالة الخطأ
+      applyTheme(DEFAULT_THEME, false);
+    }
+    
+    setIsReady(true);
+    
+    // تنظيف تأثير الـ style المباشر بعد تحميل الكلاسات
+    setTimeout(() => {
+      const root = window.document.documentElement;
+      root.style.backgroundColor = '';
+      root.style.color = '';
+    }, 100);
+    
+  }, [applyTheme]);
 
-      // حفظ التفضيلات
+  // تأثير لتطبيق المود عند التغيير
+  useEffect(() => {
+    if (!isReady) return;
+    
+    console.log('🎨 Applying theme on change:', { isDark, colorTheme });
+    
+    applyTheme(colorTheme, isDark);
+    
+    // حفظ التفضيلات
+    try {
       localStorage.setItem('darkMode', isDark);
       localStorage.setItem('colorTheme', colorTheme);
+      console.log('💾 Saved to localStorage:', { darkMode: isDark, colorTheme });
     } catch (error) {
-      console.warn('Error applying theme or saving to localStorage:', error);
+      console.warn('Error saving to localStorage:', error);
     }
-  }, [isDark, colorTheme]);
+  }, [isDark, colorTheme, isReady, applyTheme]);
 
   const changeColorTheme = (theme) => {
     if (AVAILABLE_THEMES.includes(theme)) {
       setColorTheme(theme);
-      // تم حذف حفظ localStorage هنا لأن useEffect سيتكفل بذلك
+      console.log('Theme changed to:', theme);
     } else {
       console.warn(`Invalid theme: ${theme}. Using default theme.`);
       setColorTheme(DEFAULT_THEME);
@@ -65,12 +113,17 @@ export default function useDarkMode() {
     setIsDark(prev => !prev);
   };
 
+  const setDarkMode = (value) => {
+    setIsDark(value);
+  };
+
   return {
     isDark,
-    setIsDark,
+    setIsDark: setDarkMode,
     colorTheme,
     changeColorTheme,
     toggleDarkMode,
-    availableThemes: AVAILABLE_THEMES
+    availableThemes: AVAILABLE_THEMES,
+    isReady
   };
 }
