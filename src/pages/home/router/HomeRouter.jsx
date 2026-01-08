@@ -5,6 +5,7 @@ import SettingsPage from "../settings/pages/SettingsPage";
 import ProjectsPage from "../projects/page/ProjectsPage";
 import ProjectDetailsPage from "../projects/page/ProjectDetailsPage";
  import TasksPage from "../tasks/pages/TasksPage";
+import UserTaskDetailsPage from "../tasks/pages/UserTaskDetailsPage";
 // import TaskDetailsPage from "../tasks/pages/TaskDetailsPage";
 // import SubtasksPage from "../tasks/pages/SubtasksPage";
 
@@ -22,8 +23,8 @@ export default function HomeRouter() {
       
       {/* مسارات المهام الخاصة بالمستخدم */}
        <Route path="tasks" element={<TasksPage />} />
-      {/* <Route path="tasks/:taskId" element={<TaskDetailsPage />} />
-      <Route path="tasks/:taskId/subtasks" element={<SubtasksPage />} />  */}
+       <Route path="tasks/:taskId" element={<UserTaskDetailsPage />} />
+      {/* <Route path="tasks/:taskId/subtasks" element={<SubtasksPage />} />   */}
       
       {/* إعدادات المستخدم */}
       <Route path="settings" element={<SettingsPage />} />
