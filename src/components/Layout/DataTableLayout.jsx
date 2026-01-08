@@ -97,25 +97,14 @@ export default function DataTableLayout({
               </div>
             </div>
 
-            {showAddButton && onAddClick && hiddenStats === false ? (
+            {showAddButton && onAddClick && (
               <Button
-                onClick={() => emptyAction()} // Pass projectId to navigate
+                onClick={onAddClick} // تصحيح: استخدام onAddClick مباشرة
                 className={`flex items-center gap-2 !w-auto h-10 px-4 py-2 ${isRTL ? "flex-row-reverse" : ""}`}
               >
                 <Plus size={20} />
                 <span>{addButtonLabel || t("add")}</span>
               </Button>
-            ):
-            (
-              <div>
-                <Button 
-                  onClick={() => navigate(`/projects/${projectId}/tasks/create`)}
-                  className={`flex items-center gap-2 !w-auto h-10 px-4 py-2 ${isRTL ? "flex-row-reverse" : ""}`}
-                >
-                  <Plus size={20} />
-                  <span>{addButtonLabel || t("add")}</span>
-                </Button>
-              </div>
             )}
           </div>
         </div>

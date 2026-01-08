@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import {
   FileText,
   Plus,
-  ChevronRight,
   Calendar,
   User,
   Target,
@@ -15,10 +14,10 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  Eye,
-  Edit,
   Users,
-  ArrowLeft,
+  Pause,
+  Play,
+  Trash2,
 } from "lucide-react";
 
 import { projectService } from "../../../../admin/projects/services/projectService";
@@ -30,8 +29,9 @@ import DetailsCard from "../../../../../components/UI/DetailsCard";
 import StatCard from "../../../../../components/UI/StatCard";
 import ProgressBar from "../../../../../components/UI/ProgressBar";
 import DetailItem from "../../../../../components/UI/DetailItem";
-import Button from "../../../../../components/UI/Button";
+import ButtonHero from "../../../../../components/UI/ButtonHero";
 import Toast from "../../../../../components/Toast";
+import DeleteConfirmationModal from "../../../../../components/UI/DeleteConfirmationModal";
 
 export default function ProjectDetailsPage() {
   const { projectId } = useParams();
@@ -44,13 +44,53 @@ export default function ProjectDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedTaskId, setExpandedTaskId] = useState(null);
+  const [isRTL] = useState(i18n.language === "ar");
+
+  // Modal states
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
+
   const [toast, setToast] = useState({
     show: false,
     message: "",
     type: "success",
   });
 
-  const isRTL = i18n.language === "ar";
+  // Project status colors - حالات المشروع (5 حالات)
+  const statusColors = {
+    planning: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800",
+    Underimplementation: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800",
+    Complete: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800",
+    Pause: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800",
+    Notimplemented: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 border border-gray-200 dark:border-gray-800",
+  };
+
+  // كائن statusIcons
+  const statusIcons = {
+    planning: <Clock size={16} className="text-blue-600 dark:text-blue-400" />,
+    Underimplementation: <Play size={16} className="text-green-600 dark:text-green-400" />,
+    Complete: <CheckCircle size={16} className="text-purple-600 dark:text-purple-400" />,
+    Pause: <Pause size={16} className="text-orange-600 dark:text-orange-400" />,
+    Notimplemented: <Clock size={16} className="text-gray-600 dark:text-gray-400" />,
+  };
+
+  // دالة للحصول على النص المترجم للحالة
+  const getStatusText = useCallback((status) => {
+    switch(status) {
+      case 'planning':
+        return t('planning');
+      case 'Underimplementation':
+        return t('underImplementation');
+      case 'Complete':
+        return t('complete');
+      case 'Pause':
+        return t('paused');
+      case 'Notimplemented':
+        return t('notImplemented');
+      default:
+        return t('planning');
+    }
+  }, [t]);
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
@@ -70,9 +110,7 @@ export default function ProjectDetailsPage() {
 
       let users = [];
       try {
-        const usersResponse = await userProjectService.getProjectUsers(
-          projectId
-        );
+        const usersResponse = await userProjectService.getProjectUsers(projectId);
         users = usersResponse.data || [];
         setProjectUsers(users);
       } catch (userError) {
@@ -122,6 +160,10 @@ export default function ProjectDetailsPage() {
     () => navigate(`/projects/${projectId}/tasks`),
     [navigate, projectId]
   );
+  const handleAddTask = useCallback(
+    () => navigate(`/projects/${projectId}/tasks/create`),
+    [navigate, projectId]
+  );
   const handleBackToProjects = useCallback(
     () => navigate("/projects"),
     [navigate]
@@ -139,24 +181,68 @@ export default function ProjectDetailsPage() {
     [expandedTaskId]
   );
 
+  const handleDeleteProject = () => {
+    setProjectToDelete(project);
+    setDeleteModalOpen(true);
+  };
+
+  // دالة تنفيذ الإيقاف مباشرة
+  const handlePauseProject = async () => {
+    try {
+      await projectService.pauseProject(projectId);
+      showToast(t("projectPausedSuccessfully"), "success");
+      fetchProjectDetails();
+    } catch (error) {
+      showToast(error.response?.data?.message || t("actionError"), "error");
+    }
+  };
+
+  // دالة تنفيذ الاستئناف مباشرة
+  const handleResumeProject = async () => {
+    try {
+      await projectService.resumeProject(projectId);
+      showToast(t("projectResumedSuccessfully"), "success");
+      fetchProjectDetails();
+    } catch (error) {
+      showToast(error.response?.data?.message || t("actionError"), "error");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await projectService.deleteProject(projectId);
+      showToast(t("projectDeletedSuccessfully"), "success");
+      setTimeout(() => {
+        navigate("/projects");
+      }, 1500);
+    } catch (error) {
+      showToast(error.response?.data?.message || t("deleteError"), "error");
+    } finally {
+      setDeleteModalOpen(false);
+      setProjectToDelete(null);
+    }
+  };
+
   const statistics = useMemo(() => {
     if (!project || !project.tasks)
       return {
         completedTasks: 0,
         inProgressTasks: 0,
-        pendingTasks: 0,
+        pausedTasks: 0,
+        notImplementedTasks: 0,
+        planningTasks: 0,
         totalTasks: 0,
         teamMembers: 0,
         totalSubTasks: 0,
         completionPercentage: 0,
       };
 
-    // احتساب التاسكات بناءً على الحالات الجديدة
+    // احتساب التاسكات بناءً على الحالات
     const completedTasks = project.tasks.filter(
-      (task) => task.status === "Complete" || task.status === 2
+      (task) => task.status === "Complete"
     ).length;
     const inProgressTasks = project.tasks.filter(
-      (task) => task.status === "Underimplementation" || task.status === 1
+      (task) => task.status === "Underimplementation"
     ).length;
     const pausedTasks = project.tasks.filter(
       (task) => task.status === "Pause"
@@ -164,6 +250,10 @@ export default function ProjectDetailsPage() {
     const notImplementedTasks = project.tasks.filter(
       (task) => task.status === "Notimplemented"
     ).length;
+    const planningTasks = project.tasks.filter(
+      (task) => task.status === "planning"
+    ).length;
+    
     const totalSubTasks = project.tasks.reduce(
       (total, task) => total + (task.subTasks ? task.subTasks.length : 0),
       0
@@ -181,7 +271,7 @@ export default function ProjectDetailsPage() {
       inProgressTasks,
       pausedTasks,
       notImplementedTasks,
-      pendingTasks: totalTasks - (completedTasks + inProgressTasks + pausedTasks + notImplementedTasks),
+      planningTasks,
       totalTasks,
       teamMembers: project?.users?.length || 0,
       totalSubTasks,
@@ -195,20 +285,7 @@ export default function ProjectDetailsPage() {
       return 0;
     }
     
-    // طريقة 1: استخدم percentage من statistics (أفضل)
     return statistics.completionPercentage;
-    
-    // طريقة 2: احسب مباشرة إذا كان success_rate غير موجود
-    // const completedTasks = project.tasks.filter(
-    //   task => task.status === "Complete" || task.status === 2
-    // ).length;
-    // return Math.round((completedTasks / project.tasks.length) * 100);
-    
-    // طريقة 3: استخدم project.success_rate إذا كان موجوداً وصحيحاً
-    // if (project.success_rate !== undefined && project.success_rate !== null) {
-    //   return project.success_rate;
-    // }
-    // return statistics.completionPercentage;
   }, [project, statistics.completionPercentage]);
 
   const projectManager = useMemo(() => {
@@ -234,18 +311,19 @@ export default function ProjectDetailsPage() {
     return Math.min(Math.round((elapsed / totalDuration) * 100), 100);
   }, [project]);
 
-  // Project status handling (للمشاريع)
+  // Get project status
   const getProjectStatusText = useCallback((status) => {
-    if (!status) return "";
+    if (!status) return "planning";
     
-    const statusLower = status.toLowerCase().trim();
+    const statusString = String(status).trim();
+    const statusLower = statusString.toLowerCase();
     
     const statusMap = {
       'planning': 'planning',
-      'active': 'active',
-      'completed': 'completed',
-      'onhold': 'onHold',
-      'cancelled': 'cancelled'
+      'underimplementation': 'Underimplementation',
+      'complete': 'Complete',
+      'pause': 'Pause',
+      'notimplemented': 'Notimplemented'
     };
     
     for (const [key, value] of Object.entries(statusMap)) {
@@ -254,34 +332,21 @@ export default function ProjectDetailsPage() {
       }
     }
     
-    return status;
+    return "planning";
   }, []);
 
-  // Task status handling (للتاسكات)
+  // Get task status
   const getTaskStatusText = useCallback((status) => {
-    if (status === undefined || status === null) return "pending";
+    if (status === undefined || status === null) return "planning";
     
-    // إذا كان الرقم (0, 1, 2)
-    if (typeof status === "number") {
-      const statusMap = {
-        0: 'pending',
-        1: 'Underimplementation',
-        2: 'Complete'
-      };
-      return statusMap[status] || 'pending';
-    }
-    
-    // إذا كان نصًا
     const statusString = String(status).trim();
     const statusLower = statusString.toLowerCase();
     
     const statusMap = {
       'underimplementation': 'Underimplementation',
       'complete': 'Complete',
-      'notimplemented': 'Notimplemented',
       'pause': 'Pause',
-      'pending': 'pending',
-      'planning': 'planning'
+      'notimplemented': 'Notimplemented'
     };
     
     for (const [key, value] of Object.entries(statusMap)) {
@@ -290,40 +355,40 @@ export default function ProjectDetailsPage() {
       }
     }
     
-    return "pending";
+    return "planning";
   }, []);
 
-  // Project status colors
-  const projectStatusColors = {
-    planning: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800",
-    active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800",
-    completed: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800",
-    onHold: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800",
-  };
-
-  // Task status colors (للتاسكات)
+  // Task status colors (4 حالات فقط للتاسكات)
   const taskStatusColors = {
-    pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-    planning: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
     Underimplementation: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
     Complete: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
     Pause: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
     Notimplemented: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
   };
 
-  // Get project status for display
+  // Get current project status
   const projectStatus = project ? getProjectStatusText(project.status) : 'planning';
-  const projectStatusTexts = projectStatus ? { [projectStatus]: t(projectStatus) } : {};
+  
+  // Function to check if project can be paused
+  const canPauseProject = useMemo(() => {
+    return projectStatus === "Underimplementation" || projectStatus === "planning";
+  }, [projectStatus]);
+
+  // Function to check if project can be resumed
+  const canResumeProject = useMemo(() => {
+    return projectStatus === "Pause";
+  }, [projectStatus]);
+
+  // الحصول على النص المترجم لحالة المشروع
+  const translatedProjectStatus = getStatusText(projectStatus);
 
   return (
     <DetailsLayout
       title={project?.name}
       subtitle={t("projectDetails")}
       id={project?.id}
-      status={projectStatus}
-      statusColors={projectStatusColors}
-      statusTexts={projectStatusTexts}
+      statusColors={statusColors}
+      statusIcons={statusIcons}
       loading={loading}
       error={error || (!project && !loading ? t("projectNotFound") : null)}
       onEdit={handleEditProject}
@@ -331,10 +396,11 @@ export default function ProjectDetailsPage() {
       backLabel={t("backToProjects")}
       isRTL={isRTL}
     >
+      
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
-          title="totalTasks"
+          title={t("totalTasks")}
           value={statistics.totalTasks}
           subValue={`+${statistics.totalSubTasks} ${t("subTasks")}`}
           icon={ListTodo}
@@ -342,7 +408,7 @@ export default function ProjectDetailsPage() {
           onClick={handleManageTasks}
         />
         <StatCard
-          title="completed"
+          title={t("completed")}
           value={statistics.completedTasks}
           subValue={`${
             statistics.totalTasks > 0
@@ -356,7 +422,7 @@ export default function ProjectDetailsPage() {
           onClick={handleManageTasks}
         />
         <StatCard
-          title="inProgress"
+          title={t("inProgress")}
           value={statistics.inProgressTasks}
           subValue={`${
             statistics.totalTasks > 0
@@ -370,7 +436,7 @@ export default function ProjectDetailsPage() {
           onClick={handleManageTasks}
         />
         <StatCard
-          title="teamMembers"
+          title={t("teamMembers")}
           value={statistics.teamMembers}
           subValue={`${projectUsers.filter((u) => u.role === 1).length} ${t(
             "admins"
@@ -380,15 +446,55 @@ export default function ProjectDetailsPage() {
           onClick={handleAddUsers}
         />
       </div>
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="sm:col-span-2 space-y-6">
+        {/* Left Column - Main Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Project Description Card */}
+          <DetailsCard 
+            title={t("projectDescription")} 
+            icon={FileText}
+          >
+            <div className="prose dark:prose-invert max-w-none">
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                {project?.description || t("noDescription")}
+              </p>
+            </div>
+          </DetailsCard>
+
+          {/* Recent Tasks Card */}
           <DetailsCard
             title={t("recentTasks")}
             icon={ListTodo}
-            actionLabel={t("manageTasks")}
-            onAction={handleManageTasks}
+            actions={
+              <div className="flex gap-2">
+                <ButtonHero
+                  onClick={handleManageTasks}
+                  variant="info"
+                  size="sm"
+                  isRTL={isRTL}
+                  icon={ListTodo}
+                  iconPosition={isRTL ? "right" : "left"}
+                  className="flex items-center gap-2"
+                >
+                  {t("manageTasks")}
+                </ButtonHero>
+                <ButtonHero
+                  onClick={handleAddTask}
+                  variant="success"
+                  size="sm"
+                  isRTL={isRTL}
+                  icon={Plus}
+                  iconPosition={isRTL ? "right" : "left"}
+                  className="flex items-center gap-2"
+                >
+                  {t("addTask")}
+                </ButtonHero>
+              </div>
+            }
           >
+            
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               {t("showing")} {Math.min(tasks.length, 5)} {t("of")}{" "}
               {statistics.totalTasks} {t("tasks")}
@@ -398,7 +504,7 @@ export default function ProjectDetailsPage() {
               <div className="space-y-3">
                 {tasks.map((task) => {
                   const taskStatus = getTaskStatusText(task.status);
-                  const taskStatusKey = taskStatus; // الحفظ كمفتاح للترجمة
+                  const translatedTaskStatus = getStatusText(taskStatus);
                   
                   return (
                     <div
@@ -411,10 +517,10 @@ export default function ProjectDetailsPage() {
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 taskStatusColors[taskStatus] ||
-                                taskStatusColors.pending
+                                taskStatusColors.Underimplementation
                               }`}
                             >
-                              {t(taskStatusKey)}
+                              {translatedTaskStatus}
                             </span>
                             <div className="flex-1 min-w-0">
                               <h3
@@ -487,25 +593,6 @@ export default function ProjectDetailsPage() {
                               </p>
                             </div>
                           </div>
-                          
-                          {/* Task Status Details */}
-                          <div className="mt-4 p-2 bg-gray-100 dark:bg-gray-800/50 rounded">
-                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              {t("taskStatusDetails")}
-                            </h4>
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-1 rounded text-xs ${taskStatusColors[taskStatus]}`}>
-                                {t(taskStatusKey)}
-                              </span>
-                              <span className="text-xs text-gray-600 dark:text-gray-400">
-                                {taskStatus === "Underimplementation" ? t("inProgressDescription") :
-                                 taskStatus === "Complete" ? t("completedDescription") :
-                                 taskStatus === "Pause" ? t("pausedDescription") :
-                                 taskStatus === "Notimplemented" ? t("notImplementedDescription") :
-                                 t("pendingDescription")}
-                              </span>
-                            </div>
-                          </div>
                         </div>
                       )}
                     </div>
@@ -518,21 +605,58 @@ export default function ProjectDetailsPage() {
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
                   {t("noTasksInProject")}
                 </p>
+                <ButtonHero
+                  onClick={handleAddTask}
+                  variant="success"
+                  size="md"
+                  isRTL={isRTL}
+                  icon={Plus}
+                  iconPosition={isRTL ? "right" : "left"}
+                  className="flex items-center gap-2 mx-auto"
+                >
+                  {t("addFirstTask")}
+                </ButtonHero>
               </div>
             )}
           </DetailsCard>
         </div>
 
+        {/* Right Column - Sidebar */}
         <div className="space-y-6">
-          <DetailsCard title={t("projectDetails")}>
+          {/* Project Information Card */}
+          <DetailsCard 
+            title={t("projectInformation")} 
+            icon={FileText}
+          >
             <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {t("projectID")}:
+                </span>
+                <span className="font-mono font-semibold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                  #{project?.id}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {t("status")}:
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${
+                  statusColors[projectStatus] || statusColors.planning
+                }`}>
+                  {statusIcons[projectStatus] || statusIcons.planning}
+                  {translatedProjectStatus}
+                </span>
+              </div>
+
               <DetailItem
                 icon={Calendar}
                 title={t("startDate")}
                 value={
                   project?.start_date
                     ? new Date(project.start_date).toLocaleDateString()
-                    : "N/A"
+                    : t("notSet")
                 }
                 color="blue"
                 isRTL={isRTL}
@@ -543,133 +667,191 @@ export default function ProjectDetailsPage() {
                 value={
                   project?.end_date
                     ? new Date(project.end_date).toLocaleDateString()
-                    : "N/A"
+                    : t("notSet")
                 }
                 color="orange"
                 isRTL={isRTL}
               />
+              
               <DetailItem
                 icon={User}
                 title={t("projectManager")}
-                value={project?.projectManagerName ? project.projectManagerName : "N/A"}
-                subValue={""}
+                value={project?.projectManagerName}
+                
                 color="green"
                 isRTL={isRTL}
               />
             </div>
           </DetailsCard>
 
-          {/* Project Progress - FIXED */}
-          <DetailsCard title={t("projectProgress")} icon={BarChart3}>
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t("completionRate")}
-                </span>
-                <span className="text-sm font-bold text-gray-800 dark:text-white">
-                  {projectCompletionRate}%
-                </span>
-              </div>
-              <ProgressBar
-                value={projectCompletionRate}
-                subLabel={`${statistics.completedTasks}/${statistics.totalTasks} ${t("tasksCompleted")}`}
-                animated
-                showPercentage={true}
-              />
-            </div>
-            
-            {/* Time Progress */}
-            <div className="mt-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t("timeProgress")}
-                </span>
-                <span className="text-sm font-bold text-gray-800 dark:text-white">
-                  {timeProgress}%
-                </span>
-              </div>
-              <ProgressBar
-                value={timeProgress}
-                color={timeProgress >= 100 ? "red" : timeProgress >= 80 ? "yellow" : "blue"}
-                animated
-                showPercentage={true}
-              />
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                <span>
-                  {project?.start_date ? new Date(project.start_date).toLocaleDateString() : "N/A"}
-                </span>
-                <span>
-                  {project?.end_date ? new Date(project.end_date).toLocaleDateString() : "N/A"}
-                </span>
-              </div>
-            </div>
-            
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-              {t("basedOnTaskCompletion")}
+          {/* Quick Actions Card */}
+          <DetailsCard 
+            title={t("quickActions")} 
+            icon={Target}
+          >
+            <div className="space-y-2">
+              <ButtonHero
+                onClick={handleAddUsers}
+                variant="primary"
+                size="md"
+                isRTL={isRTL}
+                icon={Users}
+                iconPosition={isRTL ? "right" : "left"}
+                fullWidth={true}
+                className="justify-start"
+              >
+                {t("manageUsers")} ({projectUsers.length})
+              </ButtonHero>
+
+              <ButtonHero
+                onClick={handleAddTask}
+                variant="success"
+                size="md"
+                isRTL={isRTL}
+                icon={Plus}
+                iconPosition={isRTL ? "right" : "left"}
+                fullWidth={true}
+                className="justify-start"
+              >
+                {t("addTask")}
+              </ButtonHero>
+
+              {/* زر إيقاف المشروع - يظهر فقط إذا كان المشروع قابلاً للإيقاف */}
+              {canPauseProject && (
+                <ButtonHero
+                  onClick={handlePauseProject}
+                  variant="warning"
+                  size="md"
+                  isRTL={isRTL}
+                  icon={Pause}
+                  iconPosition={isRTL ? "right" : "left"}
+                  fullWidth={true}
+                  className="justify-start"
+                >
+                  {t("pauseProject")}
+                </ButtonHero>
+              )}
+
+              {/* زر استئناف المشروع - يظهر فقط إذا كان المشروع متوقفاً */}
+              {canResumeProject && (
+                <ButtonHero
+                  onClick={handleResumeProject}
+                  variant="success"
+                  size="md"
+                  isRTL={isRTL}
+                  icon={Play}
+                  iconPosition={isRTL ? "right" : "left"}
+                  fullWidth={true}
+                  className="justify-start"
+                >
+                  {t("resumeProject")}
+                </ButtonHero>
+              )}
+
+              {/* زر حذف المشروع */}
+              <ButtonHero
+                onClick={handleDeleteProject}
+                variant="danger"
+                size="md"
+                isRTL={isRTL}
+                icon={Trash2}
+                iconPosition={isRTL ? "right" : "left"}
+                fullWidth={true}
+                className="justify-start"
+              >
+                {t("deleteProject")}
+              </ButtonHero>
             </div>
           </DetailsCard>
 
-          {/* Task Status Summary */}
-          <DetailsCard title={t("taskStatusSummary")} icon={BarChart3}>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("completed")}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{statistics.completedTasks}</span>
-                  <span className={`px-2 py-1 rounded text-xs ${taskStatusColors.Complete}`}>
-                    {t("Complete")}
-                  </span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("inProgress")}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{statistics.inProgressTasks}</span>
-                  <span className={`px-2 py-1 rounded text-xs ${taskStatusColors.Underimplementation}`}>
-                    {t("Underimplementation")}
-                  </span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("paused")}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{statistics.pausedTasks}</span>
-                  <span className={`px-2 py-1 rounded text-xs ${taskStatusColors.Pause}`}>
-                    {t("Pause")}
-                  </span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("notImplemented")}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{statistics.notImplementedTasks}</span>
-                  <span className={`px-2 py-1 rounded text-xs ${taskStatusColors.Notimplemented}`}>
-                    {t("Notimplemented")}
-                  </span>
-                </div>
-              </div>
-              <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+          {/* Project Progress Card */}
+          <DetailsCard 
+            title={t("projectProgress")} 
+            icon={BarChart3}
+          >
+            <div className="space-y-4">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {t("total")}
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {t("completionRate")}
                   </span>
-                  <span className="text-sm font-bold text-gray-800 dark:text-white">
-                    {statistics.totalTasks} {t("tasks")}
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {projectCompletionRate}%
                   </span>
+                </div>
+                <ProgressBar
+                  value={projectCompletionRate}
+                  height="h-3"
+                  color="primary"
+                />
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {t("basedOnTaskCompletion")}
+                </div>
+              </div>
+
+              {/* Time Progress */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      {t("timeProgress")}
+                    </span>
+                    <span className="text-sm font-bold text-gray-800 dark:text-white">
+                      {timeProgress}%
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={timeProgress}
+                    color={timeProgress >= 100 ? "red" : timeProgress >= 80 ? "yellow" : "blue"}
+                    height="h-3"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <span>
+                      {project?.start_date ? new Date(project.start_date).toLocaleDateString() : "N/A"}
+                    </span>
+                    <span>
+                      {project?.end_date ? new Date(project.end_date).toLocaleDateString() : "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Task Status Summary */}
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                    {statistics.completedTasks}
+                  </div>
+                  <div className="text-xs text-green-700 dark:text-green-300 mt-1">
+                    {t("completed")}
+                  </div>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {statistics.inProgressTasks}
+                  </div>
+                  <div className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                    {t("inProgress")}
+                  </div>
                 </div>
               </div>
             </div>
           </DetailsCard>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setProjectToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        itemName={projectToDelete?.name}
+        type="project"
+        count={1}
+      />
 
       {/* Toast Notification */}
       {toast.show && (
@@ -678,7 +860,6 @@ export default function ProjectDetailsPage() {
           type={toast.type}
           onClose={hideToast}
           duration={5000}
-          position="bottom-right"
         />
       )}
     </DetailsLayout>

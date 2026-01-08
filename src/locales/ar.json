@@ -369,5 +369,25 @@
   "taskStatistics": "إحصائيات المهمة",
   "totalSubTasks": "إجمالي المهام الفرعية",
   "completedSubTasks": "المهام الفرعية المكتملة",
-  "recentSubTasks": "المهام الفرعية الأخيرة"
+  "recentSubTasks": "المهام الفرعية الأخيرة",
+  "supTasksManagement": "إدارة المهام الفرعية",
+  "editingTask": "تعديل المهمة",
+  "clickToRate": "انقر للتقييم",
+  "editingSupTask": "تعديل المهمة الفرعية",
+  "editSupTask": "تعديل تفاصيل المهمة الفرعية ",
+  "backToSupTask": " العودة إلى المهمة الفرعية",
+  "backToSupTasks":"العودة إلى المهام الفرعية",
+  "supTaskName": "اسم المهمة الفرعية",
+  "searchSupTasks": "بحث عن مهمة فرعية",
+  "taskStatusDetails": "تفاصيل حالة المهمة",
+  "supTaskDescriptionRequired": "وصف المهمة الفرعية مطلوب",
+  "projectDescription": "وصف المشروع",
+  "noSubTasksYet": "لا توجد مهام فرعية بعد. ابدأ بإنشاء مهمة فرعية جديدة لإدارة عملك بكفاءة.",
+  "noSubTasksDescription": "لا توجد وصف للمهمة الفرعية",
+  "viewList": "عرض القائمة",
+  "createSupTask": "إنشاء مهمة فرعية",
+  "addNewSupTask": "إضافة مهمة فرعية جديدة",
+  "supTaskCreatedSuccessfully": "تم إنشاء المهمة الفرعية بنجاح"
+
 }
+

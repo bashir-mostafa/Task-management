@@ -32,7 +32,8 @@ import {
   UsersIcon,
   Settings,
   EyeIcon,
-  FilePlus
+  FilePlus,
+  Calculator
 } from "lucide-react";
 import { taskService } from "../../services/taskService";
 import { supTaskService } from "../../services/supTaskService";
@@ -77,6 +78,15 @@ export default function ProjectTaskDetailsPage() {
     type: "success",
   });
 
+  // إحصائيات المهام الفرعية
+  const [subTaskStats, setSubTaskStats] = useState({
+    total: 0,
+    statusCounts: []
+  });
+
+  // معدل الإنجاز المحسوب ديناميكياً
+  const [calculatedSuccessRate, setCalculatedSuccessRate] = useState(0);
+
   const statusColors = {
     Notimplemented:
       "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 border border-gray-200 dark:border-gray-800",
@@ -101,6 +111,22 @@ export default function ProjectTaskDetailsPage() {
     Pause: <Pause size={16} className="text-orange-600 dark:text-orange-400" />,
   };
 
+  // ألوان الحالات للمهام الفرعية
+  const subTaskStatusColors = {
+    Notimplemented: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300",
+    Underimplementation: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+    Complete: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+    Pause: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+  };
+
+  // أيقونات الحالات للمهام الفرعية
+  const subTaskStatusIcons = {
+    Notimplemented: <Clock size={16} className="text-gray-500" />,
+    Underimplementation: <AlertCircle size={16} className="text-blue-500" />,
+    Complete: <CheckCircle size={16} className="text-green-500" />,
+    Pause: <Pause size={16} className="text-orange-500" />,
+  };
+
   const getStatusText = (statusString) => {
     const statusMap = {
       Notimplemented: "notImplemented",
@@ -111,6 +137,17 @@ export default function ProjectTaskDetailsPage() {
     return statusMap[statusString] || "notImplemented";
   };
 
+  // دالة للحصول على نص حالة المهمة الفرعية
+  const getSubTaskStatusText = (status) => {
+    const statusMap = {
+      Notimplemented: "notImplemented",
+      Underimplementation: "underImplementation",
+      Complete: "completed",
+      Pause: "paused",
+    };
+    return statusMap[status] || "unknown";
+  };
+
   const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
   }, []);
@@ -118,6 +155,26 @@ export default function ProjectTaskDetailsPage() {
   const hideToast = useCallback(() => {
     setToast((prev) => ({ ...prev, show: false }));
   }, []);
+
+  // دالة لحساب معدل الإنجاز بناءً على المهام الفرعية المكتملة
+  const calculateSuccessRate = useCallback((tasksArray) => {
+    if (!tasksArray || tasksArray.length === 0) return 0;
+    
+    const completedTasks = tasksArray.filter(st => st.status === "Complete").length;
+    const totalTasks = tasksArray.length;
+    
+    return Math.round((completedTasks / totalTasks) * 100);
+  }, []);
+
+  // دالة لتحديث معدل الإنجاز عند تغيير المهام الفرعية
+  useEffect(() => {
+    if (subTasks.length > 0) {
+      const successRate = calculateSuccessRate(subTasks);
+      setCalculatedSuccessRate(successRate);
+    } else {
+      setCalculatedSuccessRate(0);
+    }
+  }, [subTasks, calculateSuccessRate]);
 
   useEffect(() => {
     fetchTaskDetails();
@@ -173,9 +230,27 @@ export default function ProjectTaskDetailsPage() {
   const fetchSubTasks = async () => {
     try {
       setLoadingSubTasks(true);
-      const response = await supTaskService.getSupTasksByTask(taskId);
-      setSubTasks(response.data || []);
+      const response = await supTaskService.getSupTasksByTask(taskId, 1, 20);
+      
+      // استخراج البيانات من الاستجابة
+      const subTasksData = response?.data || [];
+      const totalCount = response?.totalCount || 0;
+      const statusCounts = response?.statusCounts || [];
+      
+      setSubTasks(subTasksData);
+      
+      // حفظ إحصائيات إضافية
+      setSubTaskStats({
+        total: totalCount,
+        statusCounts: statusCounts
+      });
+      
+      // حساب معدل الإنجاز الجديد
+      const successRate = calculateSuccessRate(subTasksData);
+      setCalculatedSuccessRate(successRate);
+      
     } catch (error) {
+      console.error("Error fetching sub-tasks:", error);
       showToast(t("fetchSubTasksError"), "error");
     } finally {
       setLoadingSubTasks(false);
@@ -193,6 +268,28 @@ export default function ProjectTaskDetailsPage() {
       setLoadingUsers(false);
     }
   };
+
+  // إحصائيات المهام الفرعية
+  const getSubTaskStats = () => {
+    const total = subTasks.length;
+    const completed = subTasks.filter(st => st.status === "Complete").length;
+    const inProgress = subTasks.filter(st => st.status === "Underimplementation").length;
+    const pending = subTasks.filter(st => st.status === "Notimplemented" || !st.status).length;
+    const paused = subTasks.filter(st => st.status === "Pause").length;
+    
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    return {
+      total,
+      completed,
+      inProgress,
+      pending,
+      paused,
+      completionRate
+    };
+  };
+
+  const subTaskStatsData = getSubTaskStats();
 
   const handleAddSubTask = () => {
     navigate(`/projects/${projectId}/tasks/${taskId}/subtasks/create`);
@@ -230,23 +327,21 @@ export default function ProjectTaskDetailsPage() {
     navigate(`/projects/${projectId}/tasks/${taskId}/assign-users`);
   };
 
-  // تعديل: تنفيذ الإجراء مباشرة بدون تأكيد
   const handlePauseTask = async () => {
     try {
       await taskService.pauseTask(taskId);
       showToast(t("taskPausedSuccessfully"), "success");
-      fetchTaskDetails(); // تحديث البيانات فوراً
+      fetchTaskDetails();
     } catch (error) {
       showToast(error.response?.data?.message || t("actionError"), "error");
     }
   };
 
-  // تعديل: تنفيذ الإجراء مباشرة بدون تأكيد
   const handleResumeTask = async () => {
     try {
       await taskService.resumeTask(taskId);
       showToast(t("taskResumedSuccessfully"), "success");
-      fetchTaskDetails(); // تحديث البيانات فوراً
+      fetchTaskDetails();
     } catch (error) {
       showToast(error.response?.data?.message || t("actionError"), "error");
     }
@@ -258,6 +353,15 @@ export default function ProjectTaskDetailsPage() {
 
   const handleBack = () => {
     navigate(`/projects/${projectId}/tasks`);
+  };
+
+  // دالة لتحديث معدل الإنجاز في الخادم (اختياري)
+  const updateTaskSuccessRateInServer = async (successRate) => {
+    try {
+      await taskService.updateTaskSuccessRate(taskId, successRate);
+    } catch (error) {
+      console.error("Error updating success rate:", error);
+    }
   };
 
   const statusText = task?.status ? t(getStatusText(task.status)) : "";
@@ -279,24 +383,6 @@ export default function ProjectTaskDetailsPage() {
     }
     return stars;
   };
-
-  // إحصائيات المهمات الفرعية
-  const getSubTaskStats = () => {
-    const total = subTasks.length;
-    const completed = subTasks.filter((st) => st.status === 2).length;
-    const inProgress = subTasks.filter((st) => st.status === 1).length;
-    const pending = subTasks.filter((st) => st.status === 0).length;
-    
-    return {
-      total,
-      completed,
-      inProgress,
-      pending,
-      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
-    };
-  };
-
-  const subTaskStats = getSubTaskStats();
 
   return (
     <DetailsLayout
@@ -350,7 +436,7 @@ export default function ProjectTaskDetailsPage() {
                 <div className="flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg">
                   <Activity size={14} className="text-emerald-600 dark:text-emerald-400" />
                   <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                    {subTaskStats.completionRate}% {t("completed")}
+                    {subTaskStatsData.completionRate}% {t("completed")}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -365,38 +451,50 @@ export default function ProjectTaskDetailsPage() {
                   >
                     {t("viewSubTasksList")}
                   </ButtonHero>
-                  
                 </div>
               </div>
             }>
             
             {/* SubTask Statistics */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center border border-blue-200 dark:border-blue-700/30">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{subTaskStats.total}</div>
-                <div className="text-sm text-blue-700 dark:text-blue-300 mt-1">{t("total")}</div>
+            <div className="grid grid-cols-5 gap-3 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center border border-blue-200 dark:border-blue-700/30">
+                <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{subTaskStatsData.total}</div>
+                <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">{t("total")}</div>
               </div>
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl text-center border border-green-200 dark:border-green-700/30">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{subTaskStats.completed}</div>
-                <div className="text-sm text-green-700 dark:text-green-300 mt-1">{t("completed")}</div>
+              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center border border-green-200 dark:border-green-700/30">
+                <div className="text-xl font-bold text-green-600 dark:text-green-400">{subTaskStatsData.completed}</div>
+                <div className="text-xs text-green-700 dark:text-green-300 mt-1">{t("completed")}</div>
               </div>
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl text-center border border-yellow-200 dark:border-yellow-700/30">
-                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{subTaskStats.inProgress}</div>
-                <div className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">{t("inProgress")}</div>
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center border border-yellow-200 dark:border-yellow-700/30">
+                <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{subTaskStatsData.inProgress}</div>
+                <div className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">{t("inProgress")}</div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-xl text-center border border-gray-200 dark:border-gray-700/30">
-                <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{subTaskStats.pending}</div>
-                <div className="text-sm text-gray-700 dark:text-gray-300 mt-1">{t("pending")}</div>
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-center border border-orange-200 dark:border-orange-700/30">
+                <div className="text-xl font-bold text-orange-600 dark:text-orange-400">{subTaskStatsData.paused}</div>
+                <div className="text-xs text-orange-700 dark:text-orange-300 mt-1">{t("paused")}</div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-900/20 p-3 rounded-lg text-center border border-gray-200 dark:border-gray-700/30">
+                <div className="text-xl font-bold text-gray-600 dark:text-gray-400">{subTaskStatsData.pending}</div>
+                <div className="text-xs text-gray-700 dark:text-gray-300 mt-1">{t("pending")}</div>
               </div>
             </div>
 
+          
+
             {/* Recent SubTasks */}
             {loadingSubTasks ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">
-                  {t("loading")}
-                </p>
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : subTasks.length > 0 ? (
               <div className="space-y-3">
@@ -404,21 +502,12 @@ export default function ProjectTaskDetailsPage() {
                 {subTasks.slice(0, 5).map((subTask) => (
                   <div
                     key={subTask.id}
-                    className="group bg-gray-50 dark:bg-gray-800/30 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-200 cursor-pointer hover:shadow-sm"
+                    className="group bg-gray-50 dark:bg-gray-800/30 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-200 cursor-pointer"
                     onClick={() => handleViewSubTask(subTask.id)}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1">
-                        <div className={`p-2 rounded-lg ${
-                          subTask.status === 2 ? 'bg-green-100 dark:bg-green-900/30' :
-                          subTask.status === 1 ? 'bg-blue-100 dark:bg-blue-900/30' :
-                          'bg-gray-100 dark:bg-gray-800'
-                        }`}>
-                          {subTask.status === 2 ? 
-                            <CheckCircle size={16} className="text-green-600 dark:text-green-400" /> :
-                            subTask.status === 1 ? 
-                            <Clock size={16} className="text-blue-600 dark:text-blue-400" /> :
-                            <AlertCircle size={16} className="text-gray-500 dark:text-gray-400" />
-                          }
+                        <div className={`p-2 rounded-lg ${subTaskStatusColors[subTask.status] || 'bg-gray-100 dark:bg-gray-800'}`}>
+                          {subTaskStatusIcons[subTask.status] || <AlertCircle size={16} />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -429,15 +518,31 @@ export default function ProjectTaskDetailsPage() {
                           </p>
                         </div>
                       </div>
-                      <ChevronRight size={16} className="text-gray-400 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors" />
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs font-medium px-2 py-1 rounded ${subTaskStatusColors[subTask.status] || 'bg-gray-100'}`}>
+                          {t(getSubTaskStatusText(subTask.status))}
+                        </span>
+                        <ChevronRight size={16} className="text-gray-400 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors" />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+                    
+                    {/* معلومات المستخدم المعين */}
+                    {subTask.user && (
+                      <div className="flex items-center gap-2 mt-3 text-sm">
+                        <User size={12} className="text-gray-400" />
+                        <span className="text-gray-600 dark:text-gray-400">
+                          {subTask.user.username} ({subTask.user.role})
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
                       <div className="flex items-center gap-2">
                         <Calendar size={12} className="text-gray-400" />
                         <span className="text-gray-600 dark:text-gray-400">
                           {subTask.start_date
                             ? new Date(subTask.start_date).toLocaleDateString()
-                            : "N/A"}
+                            : t("notSet")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -445,7 +550,7 @@ export default function ProjectTaskDetailsPage() {
                         <span className="text-gray-600 dark:text-gray-400">
                           {subTask.end_date
                             ? new Date(subTask.end_date).toLocaleDateString()
-                            : "N/A"}
+                            : t("notSet")}
                         </span>
                       </div>
                     </div>
@@ -675,14 +780,16 @@ export default function ProjectTaskDetailsPage() {
                     {t("completionRate")}
                   </span>
                   <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                    {task?.success_rate || 0}%
+                    {/* استخدام معدل الإنجاز المحسوب ديناميكياً */}
+                    {calculatedSuccessRate}%
                   </span>
                 </div>
                 <ProgressBar
-                  value={task?.success_rate || 0}
+                  value={calculatedSuccessRate}
                   height="h-3"
                   color="primary"
                 />
+                
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -696,7 +803,7 @@ export default function ProjectTaskDetailsPage() {
                 </div>
                 <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="text-xl font-bold text-green-600 dark:text-green-400">
-                    {subTaskStats.completed}
+                    {subTaskStatsData.completed}
                   </div>
                   <div className="text-xs text-green-700 dark:text-green-300 mt-1">
                     {t("completedSubTasks")}

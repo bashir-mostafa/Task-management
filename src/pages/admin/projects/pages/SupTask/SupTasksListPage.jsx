@@ -343,14 +343,7 @@ export default function SupTasksListPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-gray-50 dark:bg-gray-800">
-                <th className="px-4 py-4 w-12">
-                  <input
-                    type="checkbox"
-                    checked={currentSupTasks.length > 0 && selectedSupTasks.length === currentSupTasks.length}
-                    onChange={(e) => toggleSelectAll(e.target.checked)}
-                    className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
-                  />
-                </th>
+               
                 <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('supTaskName')}
                 </th>
@@ -360,9 +353,9 @@ export default function SupTasksListPage() {
                 <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('dates')}
                 </th>
-                <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
+                {/* <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('progress')}
-                </th>
+                </th> */}
                 <th className={`px-4 py-4 text-sm font-medium text-navbar-text-light dark:text-navbar-text-dark ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('actions')}
                 </th>
@@ -386,14 +379,7 @@ export default function SupTasksListPage() {
                       key={supTask.id} 
                       className="border-b border-border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
-                      <td className="px-4 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedSupTasks.includes(supTask.id)}
-                          onChange={(e) => toggleSelectSupTask(supTask.id, e.target.checked)}
-                          className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
-                        />
-                      </td>
+                     
                       <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
                         <button
                           onClick={() => handleViewDetails(supTask.id)}
@@ -439,7 +425,7 @@ export default function SupTasksListPage() {
                           </div>
                         </div>
                       </td>
-                      <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      {/* <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <div className="w-24">
@@ -463,7 +449,7 @@ export default function SupTasksListPage() {
                             </div>
                           )}
                         </div>
-                      </td>
+                      </td> */}
                       <td className={`px-4 py-4 ${isRTL ? 'text-right' : 'text-left'}`}>
                         <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                           <button
@@ -475,7 +461,7 @@ export default function SupTasksListPage() {
                           </button>
                           
                           {/* Pause/Resume buttons */}
-                          {taskStatus === "Underimplementation" && (
+                          {/* {taskStatus === "Underimplementation" && (
                             <button
                               onClick={() => handlePauseSupTask(supTask)}
                               className="p-2 rounded-lg transition-colors text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30"
@@ -494,7 +480,7 @@ export default function SupTasksListPage() {
                               <Play size={16} />
                             </button>
                           )}
-                          
+                           */}
                           <button
                             onClick={() => handleEditSupTask(supTask)}
                             className="p-2 rounded-lg transition-colors text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30"
@@ -629,7 +615,7 @@ export default function SupTasksListPage() {
       {renderSupTasksTable()}
 
       {/* Pause/Resume Confirmation Modal */}
-      <div className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 ${pauseResumeModalOpen ? '' : 'hidden'}`}>
+      {/* <div className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 ${pauseResumeModalOpen ? '' : 'hidden'}`}>
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
           <h3 className="text-lg font-semibold mb-4">
             {pauseResumeAction === "pause" ? t("pauseSupTask") : t("resumeSupTask")}
@@ -659,7 +645,7 @@ export default function SupTasksListPage() {
             </Button>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal

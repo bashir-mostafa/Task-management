@@ -32,7 +32,6 @@ export default function SupTaskCreatePage() {
     start_date: "",
     end_date: "",
     user_id: "",
-    status: "Notimplemented", // الحالة النصية الافتراضية
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -42,13 +41,7 @@ export default function SupTaskCreatePage() {
     type: "success",
   });
 
-  // خيارات الحالة كنص - نفس الـ API
-  const statusOptions = [
-    { value: "Notimplemented", label: t("notImplemented") },
-    { value: "Underimplementation", label: t("underImplementation") },
-    { value: "Complete", label: t("completed") },
-    { value: "Pause", label: t("paused") },
-  ];
+
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
@@ -127,11 +120,8 @@ export default function SupTaskCreatePage() {
       }
     }
 
-    // التحقق من الحالة
-    const validStatuses = ["Notimplemented", "Underimplementation", "Complete", "Pause"];
-    if (!formData.status || !validStatuses.includes(formData.status)) {
-      errors.status = t("invalidStatus");
-    }
+
+    
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -154,11 +144,9 @@ export default function SupTaskCreatePage() {
         start_date: formData.start_date,
         end_date: formData.end_date,
         user_id: formData.user_id ? parseInt(formData.user_id) : 0, // 0 يعني لا يوجد مستخدم
-        status: formData.status, // إرسال الحالة كنص
         taskid: parseInt(taskId),
       };
 
-      console.log("📤 Sending sup task data with string status:", supTaskData);
       await supTaskService.createSupTask(supTaskData);
 
       showToast(t("supTaskCreatedSuccessfully"), "success");
@@ -257,25 +245,7 @@ export default function SupTaskCreatePage() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* حقل الحالة (Status) باستخدام Dropdown */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-text">
-                  {t("status")} *
-                </label>
-                <Dropdown
-                  options={statusOptions}
-                  value={formData.status}
-                  onChange={(value) => handleChange("status", value)}
-                  placeholder={t("selectStatus")}
-                  isRTL={isRTL}
-                />
-                {formErrors.status && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.status}</p>
-                )}
-                <p className="text-gray-500 text-sm mt-1">
-                  {t("statusWillBeSentAs")}: <span className="font-mono">{formData.status}</span>
-                </p>
-              </div>
+             
 
               {/* حقل المستخدم (Assigned To) باستخدام Dropdown */}
               <div>

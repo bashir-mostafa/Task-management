@@ -1,3 +1,4 @@
+// src/admin/projects/services/projectService.js
 import api from "../../../../services/api";
 
 export const projectService = {
@@ -55,6 +56,25 @@ export const projectService = {
       const response = await api.delete("/Project/Multiple_delete", {
         data: ids,
       });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // إضافة دوال الإيقاف والاستئناف
+  pauseProject: async (id) => {
+    try {
+      const response = await api.post(`/Project/${id}/pause`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  resumeProject: async (id) => {
+    try {
+      const response = await api.post(`/Project/${id}/resume`);
       return response.data;
     } catch (error) {
       throw error;
