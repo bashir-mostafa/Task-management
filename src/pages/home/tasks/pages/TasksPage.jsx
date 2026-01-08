@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { taskUserService } from "../services/taskUserService";
+import CustomDropdown from "../../../../components/UI/Dropdown"; // استيراد المكون
 
 import DetailsLayout from "../../../../components/Layout/DetailsLayout";
 import DetailsCard from "../../../../components/UI/DetailsCard";
@@ -30,9 +31,8 @@ import DetailItem from "../../../../components/UI/DetailItem";
 import ButtonHero from "../../../../components/UI/ButtonHero";
 import Toast from "../../../../components/Toast";
 import InputField from "../../../../components/UI/InputField";
-import SelectField from "../../../../components/UI/Dropdown";
 
-export default function TasksPage() {
+export default function UserTasksPage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
@@ -159,18 +159,6 @@ export default function TasksPage() {
     }
   };
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      handlePageChange(currentPage + 1);
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      handlePageChange(currentPage - 1);
-    }
-  };
-
   // Filter handlers
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
@@ -219,6 +207,30 @@ export default function TasksPage() {
   // Calculate start and end indexes for display
   const startIndex = (currentPage - 1) * pageSize + 1;
   const endIndex = Math.min(currentPage * pageSize, totalCount);
+
+  // خيارات الحالة للـ Dropdown
+  const statusOptions = useMemo(() => [
+    { value: "", label: t("allStatuses") },
+    { value: "1", label: t("planning") },
+    { value: "2", label: t("inProgress") },
+    { value: "3", label: t("completed") },
+    { value: "4", label: t("paused") },
+    { value: "5", label: t("notImplemented") }
+  ], [t]);
+
+  // خيارات الترتيب للـ Dropdown
+  const sortOptions = useMemo(() => [
+    { value: "desc", label: t("newestFirst") },
+    { value: "asc", label: t("oldestFirst") }
+  ], [t]);
+
+  // خيارات حجم الصفحة للـ Dropdown
+  const pageSizeOptions = useMemo(() => [
+    { value: "10", label: "10 " + t("tasks") },
+    { value: "20", label: "20 " + t("tasks") },
+    { value: "50", label: "50 " + t("tasks") },
+    { value: "100", label: "100 " + t("tasks") }
+  ], [t]);
 
   return (
     <DetailsLayout
@@ -316,41 +328,72 @@ export default function TasksPage() {
             </ButtonHero>
           </div>
         }>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <InputField
-            label={t("taskName")}
-            value={filters.name}
-            onChange={(e) => handleFilterChange("name", e.target.value)}
-            placeholder={t("searchByName")}
-            icon={Search}
-            isRTL={isRTL}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* حقل البحث */}
+          <div className="md:col-span-2">
+            <InputField
+              label={t("taskName")}
+              value={filters.name}
+              onChange={(e) => handleFilterChange("name", e.target.value)}
+              placeholder={t("searchByName")}
+              icon={Search}
+              isRTL={isRTL}
+            />
+          </div>
           
-          <SelectField
-            label={t("status")}
-            value={filters.status}
-            onChange={(e) => handleFilterChange("status", e.target.value)}
-            options={[
-              { value: "", label: t("allStatuses") },
-              { value: "1", label: t("planning") },
-              { value: "2", label: t("inProgress") },
-              { value: "3", label: t("completed") },
-              { value: "4", label: t("paused") },
-              { value: "5", label: t("notImplemented") }
-            ]}
-            isRTL={isRTL}
-          />
+          {/* Dropdown للحالة */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t("status")}
+            </label>
+            <CustomDropdown
+              options={statusOptions}
+              value={filters.status}
+              onChange={(value) => handleFilterChange("status", value)}
+              placeholder={t("allStatuses")}
+              isRTL={isRTL}
+              size="small"
+              className="w-full"
+            />
+          </div>
           
-          <SelectField
-            label={t("sortBy")}
-            value={filters.sortDirection}
-            onChange={(e) => handleFilterChange("sortDirection", e.target.value)}
-            options={[
-              { value: "desc", label: t("newestFirst") },
-              { value: "asc", label: t("oldestFirst") }
-            ]}
-            isRTL={isRTL}
-          />
+          {/* Dropdown للترتيب */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t("sortBy")}
+            </label>
+            <CustomDropdown
+              options={sortOptions}
+              value={filters.sortDirection}
+              onChange={(value) => handleFilterChange("sortDirection", value)}
+              placeholder={t("newestFirst")}
+              isRTL={isRTL}
+              size="small"
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        {/* Dropdown لحجم الصفحة */}
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {t("itemsPerPage")}
+            </div>
+            <div className="w-32">
+              <CustomDropdown
+                options={pageSizeOptions}
+                value={pageSize.toString()}
+                onChange={(value) => {
+                  setPageSize(parseInt(value));
+                  setCurrentPage(1);
+                }}
+                placeholder={`${pageSize} ${t("tasks")}`}
+                isRTL={isRTL}
+                size="small"
+              />
+            </div>
+          </div>
         </div>
       </DetailsCard>
 
@@ -360,10 +403,27 @@ export default function TasksPage() {
         title={t("myTasks")}
         icon={ListTodo}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600 dark:text-gray-400">
               {t("showing")} {startIndex}-{endIndex} {t("of")} {totalCount}
             </span>
+            
+            {/* Dropdown للصفحات السريعة */}
+            {totalPages > 1 && (
+              <div className="w-24">
+                <CustomDropdown
+                  options={Array.from({ length: totalPages }, (_, i) => ({
+                    value: (i + 1).toString(),
+                    label: `${t("page")} ${i + 1}`
+                  }))}
+                  value={currentPage.toString()}
+                  onChange={(value) => handlePageChange(parseInt(value))}
+                  placeholder={`${t("page")} ${currentPage}`}
+                  isRTL={isRTL}
+                  size="small"
+                />
+              </div>
+            )}
           </div>
         }>
         
@@ -558,7 +618,7 @@ export default function TasksPage() {
                   <div className="flex items-center space-x-2">
                     {/* Previous Button */}
                     <button
-                      onClick={handlePrevPage}
+                      onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
                       className={`p-2 rounded-md ${
                         currentPage === 1
@@ -633,7 +693,7 @@ export default function TasksPage() {
 
                     {/* Next Button */}
                     <button
-                      onClick={handleNextPage}
+                      onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
                       className={`p-2 rounded-md ${
                         currentPage === totalPages

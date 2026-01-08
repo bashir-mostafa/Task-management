@@ -16,7 +16,7 @@ export const taskUserService = {
 
   // الحصول على مهمة محددة للمستخدم
   getTaskById: async (taskId) => {
-    const response = await api.get(`Task/TaskUser/${taskId}`);
+    const response = await api.get(`Task/${taskId}`);
     return response.data;
   },
 

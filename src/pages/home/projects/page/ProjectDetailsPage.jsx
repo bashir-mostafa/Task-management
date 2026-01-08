@@ -184,7 +184,7 @@ export default function ProjectDetailsPage() {
     [navigate]
   );
   const handleViewTask = useCallback(
-    (taskId) => navigate(`/home/projects/${projectId}/tasks/${taskId}`),
+    (taskId) => navigate(`/home/tasks/${taskId}`),
     [navigate, projectId]
   );
 
