@@ -114,10 +114,9 @@ export default function ProjectTasksPage() {
     [statusMap]
   );
 
-  // Fetch project and tasks data
-  const fetchData = useCallback(async () => {
-    try {
+  const fetchProject = useCallback(async()=>{
       setLoading(true);
+
       setError("");
 
       // Fetch project details
@@ -127,8 +126,16 @@ export default function ProjectTasksPage() {
       }
       setProject(projectResult.project);
 
+      setLoading(false);
+
+  },[projectId])
+  
+  // Fetch project and tasks data
+  const fetchData = useCallback(async () => {
+    try {
+    
       // Fetch tasks
-      const tasksResult = await taskService.getTasksByProject(projectId);
+      const tasksResult = await taskService.getTasksByProject(projectId,{name:searchTerm});
       setTasks(tasksResult.data || []);
       setSelectedTasks([]); // Reset selected tasks
     } catch (error) {
@@ -136,15 +143,20 @@ export default function ProjectTasksPage() {
       setError(errorMessage);
       showToast(errorMessage, "error");
     } finally {
-      setLoading(false);
     }
-  }, [projectId, t, showToast]);
+  }, [projectId, t, showToast, searchTerm]);
 
   useEffect(() => {
     if (projectId) {
       fetchData();
     }
-  }, [projectId, fetchData]);
+  }, [projectId, fetchData, searchTerm]);
+
+  useEffect(()=>{
+    if(!projectId) return;
+
+    fetchProject()
+  },[projectId, fetchProject])
 
   // Filter and search tasks
   const filteredTasks = useMemo(() => {

@@ -387,7 +387,21 @@
   "viewList": "عرض القائمة",
   "createSupTask": "إنشاء مهمة فرعية",
   "addNewSupTask": "إضافة مهمة فرعية جديدة",
-  "supTaskCreatedSuccessfully": "تم إنشاء المهمة الفرعية بنجاح"
+  "supTaskCreatedSuccessfully": "تم إنشاء المهمة الفرعية بنجاح",
+  "name" : "الاسم",
+  "profile" :"حساب تعريفي",
+  "theme": "سمة",
+  "managePreferences":"إدارة التفضيلات",
+  "securityFeatures":"ميزات الأمان",
+  "createBackup":"إنشاء نسخة احتياطية",
+  "restore" :"يعيد",
+  "autoBackup":"النسخ الاحتياطي التلقائي",
+  "backupHistory":"تاريخ النسخ الاحتياطي",
+  "advancedSettings":"الإعدادات المتقدمة",
+  "retentionPeriod":"فترة الاحتفاظ",
+  "backupFrequency":"تردد النسخ الاحتياطي",
+  "userDetails":"تفاصيل المستخدم" ,
+  "createNewUser": "انشاء مستخدم جديد"
 
 }
 

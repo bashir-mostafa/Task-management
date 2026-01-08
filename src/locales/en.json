@@ -153,6 +153,19 @@
   "noKeep": "No, Keep",
   "selectAll": "Select All",
   "projectsDeletedSuccessfully": "Projects deleted successfully",
-  "deleteProjectsConfirmation": "Are you sure you want to delete {{count}} selected projects? This action will permanently remove all selected projects and their associated data."
-  
+  "deleteProjectsConfirmation": "Are you sure you want to delete {{count}} selected projects? This action will permanently remove all selected projects and their associated data.",
+   "name" : "Name",
+  "profile" :"Profile",
+  "theme": "Theme",
+  "managePreferences":"Manage Preferences",
+  "securityFeatures":"Security Features",
+  "createBackup":"Create Backup",
+  "restore" :"Restore",
+  "autoBackup":"Auto Backup",
+  "backupHistory":"Backup History",
+  "advancedSettings":"Advanced Settings",
+  "retentionPeriod":"Retention Period",
+  "backupFrequency":"Backup Frequency",
+  "userDetails":"User Details",
+  "createNewUser": "Create New User"
 }
