@@ -20,22 +20,33 @@ export const taskUserService = {
     return response.data;
   },
 
-  // تحديث حالة المهمة
-  updateTaskStatus: async (taskId, status) => {
-    const response = await api.put(`Task/TaskUser/${taskId}/status`, { status });
+  // الحصول على معلومات المهمة للمستخدم (UserTask Info)
+  getUserTaskInfo: async (taskId) => {
+    const response = await api.get(`UserTask/Info/${taskId}`);
     return response.data;
   },
 
-  // تحديث تقدم المهمة
-  updateProgress: async (taskId, progress, notes) => {
-    const response = await api.put(`Task/TaskUser/${taskId}/progress`, {
-      progress,
-      notes
+  // تحديث حالة المهمة للمستخدم (UserTask)
+  updateUserTask: async (taskId, data) => {
+    const response = await api.put('UserTask/UserTask', {
+      taskid: taskId,
+      ...data
     });
     return response.data;
   },
 
-  // إضافة تعليق للمهمة
+  // إضافة تعليق مع الحالة للمهمة
+  addCommentWithStatus: async (taskId, comment, status) => {
+    // هنا يمكنك استخدام الـ API المناسب لإرسال التعليق مع الحالة
+    // إذا كان لديك API مخصص للتعليقات مع الحالة
+    const response = await api.post(`Task/TaskUser/${taskId}/comments`, { 
+      comment,
+      status 
+    });
+    return response.data;
+  },
+
+  // إضافة تعليق عادي للمهمة
   addComment: async (taskId, comment) => {
     const response = await api.post(`Task/TaskUser/${taskId}/comments`, { comment });
     return response.data;
