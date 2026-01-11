@@ -443,6 +443,16 @@
   "Completed": "مكتمل",
   "Paused": "متوقف",
   "subTasksProgress": "تقدم المهام الفرعية",
-  "NotImplemented": "لم ينفذ"
+  "NotImplemented": "لم ينفذ",
+  "createFirstSubTask":"انشاء مهمة فرعية ",
+  "createFirstSupTask":"انشاء مهمة فرعية ",
+  "noSupTasksInTask" : "لا توجد مهام فرعية",
+  "noSupTasksMatchFilters" : "لا توجد مهام فرعية بهذا الاسم",
+  "areYouSureChangePassword":"تغيير كلمة المرور",
+  "yesChange":"نعم غير كلمة المرور",
+  "projectTasks" : "مهام المشروع",
+  "manageTasks" : "ادارة المهام",
+  "saveNotes":"حفظ ",
+  "subTasksSummary":"معلومات المهمام الفرعية "
 
 }

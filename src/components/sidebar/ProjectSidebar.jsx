@@ -51,14 +51,6 @@ export default function ProjectSidebar({
       path: `/projects/${projectId}/edit`,
       color: "text-gray-600 dark:text-gray-400",
       bgColor: "bg-gray-50 dark:bg-gray-900/20",
-    },
-    {
-      id: "supTasks",
-      name: t("supTasks"),
-      icon: ListTodo,
-      path: `/projects/${projectId}/tasks/subTask`,
-      color: "text-purple-600 dark:text-purple-400",
-      bgColor: "bg-purple-50 dark:bg-purple-900/20",
     }
   ];
 
@@ -87,14 +79,14 @@ export default function ProjectSidebar({
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
             <FolderOpen size={18} className="text-white" />
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-white truncate">
-              {t("project")} #{projectId}
-            </h3>
+          <div className="grid grid-cols-2 gap-14">
+            <div>
+
+              {t("project")} 
+            </div>
+            
             <div className="flex items-center gap-1 mt-1">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {t("projectName")} 
-              </span>
+            ID :  {projectId} 
             </div>
           </div>
         </div>

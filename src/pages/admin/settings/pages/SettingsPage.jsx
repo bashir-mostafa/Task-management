@@ -28,15 +28,14 @@ import {
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState("appearance");
 
   const settingsTabs = [
-    { id: "general", label: t("general"), icon: <User size={16} /> },
+    // { id: "general", label: t("general"), icon: <User size={16} /> },
     { id: "appearance", label: t("appearance"), icon: <Palette size={16} /> },
     { id: "security", label: t("security"), icon: <Shield size={16} /> },
-    { id: "backup", label: t("backupRestore"), icon: <Database size={16} /> },
-    { id: "notifications", label: t("notifications"), icon: <Bell size={16} /> },
-    { id: "billing", label: t("billing"), icon: <CreditCard size={16} /> },
+    // { id: "backup", label: t("backupRestore"), icon: <Database size={16} /> },
+  
   ];
 
   const backupHistory = [
@@ -85,7 +84,7 @@ export default function SettingsPage() {
             </div>
 
             {/* System Status - Compact */}
-            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+            {/* <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">{t("lastBackup")}</span>
@@ -96,7 +95,7 @@ export default function SettingsPage() {
                   <span>2.5/10 GB</span>
                 </div>
               </div>
-            </div>
+            </div> */}
           </nav>
         </div>
 
@@ -235,7 +234,7 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <ChangePasswordSection isRTL={isRTL} />
               
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              {/* <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">
                   <Shield size={14} />
                   {t("securityFeatures")}
@@ -269,7 +268,7 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           )}
 

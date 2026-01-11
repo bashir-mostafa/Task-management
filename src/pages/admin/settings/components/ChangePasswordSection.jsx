@@ -108,8 +108,8 @@ export default function ChangePasswordSection({ isRTL }) {
           setShowPassword={setShowOld}
           placeholder={t("enterCurrentPassword")}
           error={errors.oldPassword}
-          dir={isRTL ? "rtl" : "ltr"}
-        />
+isRTL={isRTL}    
+    />
 
         {/* كلمة المرور الجديدة */}
         <PasswordField
@@ -120,19 +120,12 @@ export default function ChangePasswordSection({ isRTL }) {
           setShowPassword={setShowNew}
           placeholder={t("enterNewPassword")}
           error={errors.newPassword}
-          dir={isRTL ? "rtl" : "ltr"}
+isRTL={isRTL}    
         />
 
         {/* قوة كلمة المرور */}
         <PasswordStrengthIndicator password={newPassword} isRTL={isRTL} />
 
-        {/* شروط كلمة المرور */}
-        <PasswordRequirements
-          password={newPassword}
-          confirmPassword={confirm}
-          passwordsMatch={passwordsMatch}
-          isRTL={isRTL}
-        />
 
         <ConfirmPasswordField
           label={t("confirmPassword")}
@@ -144,6 +137,13 @@ export default function ChangePasswordSection({ isRTL }) {
           placeholder={t("confirmNewPassword")}
           error={errors.confirm}
           passwordsMatch={passwordsMatch}
+        />
+        {/* شروط كلمة المرور */}
+        <PasswordRequirements
+          password={newPassword}
+          confirmPassword={confirm}
+          passwordsMatch={passwordsMatch}
+          isRTL={isRTL}
         />
 
         {/* زر الحفظ */}

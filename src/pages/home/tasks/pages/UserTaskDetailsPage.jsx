@@ -781,7 +781,7 @@ export default function UserTaskDetailsPage() {
                                     {t("updateStatus")}:
                                   </p>
                                   <div className="flex flex-wrap gap-1">
-                                    {["Underimplementation", "Complete", "Notimplemented", "Pause"].map(status => (
+                                    {["Complete"].map(status => (
                                       <button
                                         key={status}
                                         onClick={() => handleUpdateSupTaskStatus(supTask.id, status)}

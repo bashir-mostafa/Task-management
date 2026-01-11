@@ -159,7 +159,7 @@ export default function DataTableLayout({
                 </div>
               )}
 
-              {filters && filters.length > 0 && (
+              {/* {filters && filters.length > 0 && (
                 <div className="flex flex-wrap gap-2 w-full md:w-auto">
                   {filters.map((filter, index) => (
                     <Select
@@ -177,7 +177,7 @@ export default function DataTableLayout({
                     </Select>
                   ))}
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         )}
