@@ -64,32 +64,28 @@ export default function UserTasksPage() {
   // Task status colors
   const statusColors = {
     1: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300", // Planning
-    2: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300", // In Progress
-    3: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300", // Completed
+    2: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300", // Completed
+    3: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300", // Not Implemented
     4: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300", // Paused
-    5: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300", // Not Implemented
   };
 
   const statusIcons = {
-    1: <Clock size={16} className="text-blue-600 dark:text-blue-400" />,
-    2: <BarChart3 size={16} className="text-yellow-600 dark:text-yellow-400" />,
-    3: <CheckCircle size={16} className="text-green-600 dark:text-green-400" />,
+    1: <Clock size={16} className="text-blue-600 dark:text-blue-400" />, 
+    2: <CheckCircle size={16} className="text-green-600 dark:text-green-400" />,
+    3: <AlertCircle size={16} className="text-red-600 dark:text-red-400" />,
     4: <Clock size={16} className="text-orange-600 dark:text-orange-400" />,
-    5: <AlertCircle size={16} className="text-red-600 dark:text-red-400" />,
   };
 
   const getStatusText = useCallback((status) => {
     switch (status) {
       case 1:
-        return t("planning");
-      case 2:
         return t("inProgress");
-      case 3:
+      case 2:
         return t("completed");
-      case 4:
-        return t("paused");
-      case 5:
+      case 3:
         return t("notImplemented");
+      case 4:
+        return t("paused"); 
       default:
         return t("unknown");
     }
@@ -211,11 +207,10 @@ export default function UserTasksPage() {
   // خيارات الحالة للـ Dropdown
   const statusOptions = useMemo(() => [
     { value: "", label: t("allStatuses") },
-    { value: "1", label: t("planning") },
-    { value: "2", label: t("inProgress") },
-    { value: "3", label: t("completed") },
-    { value: "4", label: t("paused") },
-    { value: "5", label: t("notImplemented") }
+    { value: "1", label: t("inProgress") },
+    { value: "2", label: t("completed") },
+    { value: "3", label: t("notImplemented") },
+    { value: "4", label: t("paused") },  
   ], [t]);
 
   // خيارات الترتيب للـ Dropdown
