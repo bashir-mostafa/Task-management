@@ -631,7 +631,7 @@ export default function ProjectDetailsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {t("projectID")}:
+                  {t("ID")}:
                 </span>
                 <span className="font-mono font-semibold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                   #{project?.id}
